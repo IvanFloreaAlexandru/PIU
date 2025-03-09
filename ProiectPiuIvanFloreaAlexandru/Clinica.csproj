@@ -45,12 +45,19 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Services\UserService.cs" />
-    <Compile Include="Services\PacientService.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\LibrarieModele\LibrarieModele.csproj">
+      <Project>{744e89f3-2b5c-42c4-81d1-51177e4aefcb}</Project>
+      <Name>LibrarieModele</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\NivelStocareDate\NivelStocareDate.csproj">
+      <Project>{9ecfb1a2-8a2f-484e-8faa-4f071c6c41fc}</Project>
+      <Name>NivelStocareDate</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

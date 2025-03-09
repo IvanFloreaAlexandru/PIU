@@ -1,5 +1,6 @@
 ﻿using System;
-using ClinicaApp.Services;
+using LibrarieModele;
+using NivelStocareDate;
 
 namespace ClinicaApp
 {
@@ -10,97 +11,99 @@ namespace ClinicaApp
             try
             {
                 UtilizatorService utilizatorService = new UtilizatorService();
-                UserService clinicaService = new UserService();
 
-                Utilizator director = new Utilizator
+                while (true)
                 {
-                    Id = 1,
-                    Nume = "Maria Ionescu",
-                    Contact = "0722334455",
-                    Email = "maria.ionescu@example.com",
-                    CNP = "2871234567890",
-                    Adresa = "Str. Independentei, Nr. 12",
-                    AsigurareMedicala = "CAS 2024",
-                    RangUtilizator = Rang.DirectorSpital
-                };
+                    Console.WriteLine("\nMeniu:");
+                    Console.WriteLine("1. Adauga utilizator");
+                    Console.WriteLine("2. Afiseaza utilizatori");
+                    Console.WriteLine("3. Cauta utilizator dupa ID");
+                    Console.WriteLine("4. Iesire");
+                    Console.Write("Alege o optiune: ");
 
-                Utilizator sefDepartament = new Utilizator
-                {
-                    Id = 2,
-                    Nume = "George Popa",
-                    Contact = "0733445566",
-                    Email = "george.popa@example.com",
-                    CNP = "1804567890123",
-                    Adresa = "Str. Mihai Viteazu, Nr. 45",
-                    RangUtilizator = Rang.SefDepartament,
-                    DepartamentId = 1
-                };
+                    string optiune = Console.ReadLine();
 
-                Utilizator medic = new Utilizator
-                {
-                    Id = 3,
-                    Nume = "Ana Vasilescu",
-                    Contact = "0744556677",
-                    Email = "ana.vasilescu@example.com",
-                    CNP = "2924567890123",
-                    Adresa = "Str. Aviatorilor, Nr. 32",
-                    RangUtilizator = Rang.Medic,
-                    MedicDeFamilieId = 2,
-                    DepartamentId = 1
-                };
-
-                clinicaService.AdaugaUtilizator(director, director);
-                clinicaService.AdaugaUtilizator(sefDepartament, director);
-                clinicaService.AdaugaUtilizator(medic, sefDepartament);
-
-                clinicaService.ModificaUtilizator(medic, sefDepartament, "Ana Ionescu", "0766778899");
-
-                utilizatorService.GestionareAsigurari(medic, "CAS 2025");
-                utilizatorService.AsociereMedicDeFamilie(medic, 5);
-
-                clinicaService.CreareDepartament("Cardiologie", director);
-                clinicaService.ModificaDepartament(1, "Cardiologie Avansata", director);
-
-                clinicaService.AfiseazaStatistici(director);
-
-                medic.IstoricProgramari.Add(new Programare { Id = 101, DataSiOra = DateTime.Now });
-                utilizatorService.AfiseazaIstoricProgramari(medic);
-
-                medic.IstoricPrescriptii.Add(new Prescriptie { Id = 201, TipPrescriptie = "Antibiotic" });
-                utilizatorService.AfiseazaIstoricPrescriptii(medic);
-
-                try
-                {
-                    Utilizator duplicat = new Utilizator
+                    switch (optiune)
                     {
-                        Id = 4,
-                        Nume = "George Popa",
-                        Contact = "0733445566",
-                        Email = "george.popa@example.com",
-                        CNP = "1804567890123",
-                        RangUtilizator = Rang.Medic
-                    };
-                    clinicaService.AdaugaUtilizator(duplicat, director);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Eroare la adaugare utilizator duplicat: {ex.Message}");
-                }
-
-                clinicaService.StergeUtilizator(3, sefDepartament);
-
-                try
-                {
-                    clinicaService.StergeUtilizator(99, director);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Eroare la stergere utilizator inexistent: {ex.Message}");
+                        case "1":
+                            AdaugaUtilizator(utilizatorService);
+                            break;
+                        case "2":
+                            utilizatorService.AfiseazaUtilizatori();
+                            break;
+                        case "3":
+                            CautaUtilizator(utilizatorService);
+                            break;
+                        case "4":
+                            Environment.Exit(0);
+                            break;
+                        default:
+                            Console.WriteLine("Optiune invalida. Incercati din nou.");
+                            break;
+                    }
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Eroare generala: {ex.Message}");
+            }
+        }
+
+        private static void AdaugaUtilizator(UtilizatorService utilizatorService)
+        {
+            Console.WriteLine("Introduceti detaliile utilizatorului:");
+
+            Console.Write("Nume: ");
+            string nume = Console.ReadLine();
+
+            Console.Write("Contact: ");
+            string contact = Console.ReadLine();
+
+            Console.Write("Email: ");
+            string email = Console.ReadLine();
+
+            Console.Write("CNP: ");
+            string cnp = Console.ReadLine();
+
+            Console.Write("Adresa: ");
+            string adresa = Console.ReadLine();
+
+            Console.Write("Asigurare Medicala: ");
+            string asigurare = Console.ReadLine();
+
+            Console.Write("Rang (0 - Angajat, 1 - SefDepartament, 2 - DirectorSpital, 3 - Medic): ");
+            Rang rang = (Rang)Enum.Parse(typeof(Rang), Console.ReadLine());
+
+            Utilizator utilizatorNou = new Utilizator
+            {
+                Id = new Random().Next(1, 1000),
+                Nume = nume,
+                Contact = contact,
+                Email = email,
+                CNP = cnp,
+                Adresa = adresa,
+                AsigurareMedicala = asigurare,
+                RangUtilizator = rang
+            };
+
+            utilizatorService.AdaugaUtilizator(utilizatorNou);
+        }
+
+        private static void CautaUtilizator(UtilizatorService utilizatorService)
+        {
+            Console.Write("Introduceti un ID pentru cautare: ");
+            int idCautat = int.Parse(Console.ReadLine());
+
+            var utilizatorGasit = utilizatorService.CautaUtilizatorDupaId(idCautat);
+
+            if (utilizatorGasit != null)
+            {
+                Console.WriteLine("Utilizator gasit:");
+                Console.WriteLine(utilizatorGasit.Info());
+            }
+            else
+            {
+                Console.WriteLine("Utilizatorul nu a fost gasit.");
             }
         }
     }
