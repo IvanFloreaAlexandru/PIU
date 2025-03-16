@@ -41,8 +41,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AdministrareDepartamente_FisierText.cs" />
+    <Compile Include="AdministrareDepartamente_Memorie.cs" />
+    <Compile Include="AdministrareMedici_FisierText.cs" />
+    <Compile Include="AdministrareMedici_Memorie.cs" />
+    <Compile Include="AdministrarePacienti_FisierText.cs" />
+    <Compile Include="AdministrarePacienti_Memorie.cs" />
+    <Compile Include="AdministrarePrescriptii_FisierText.cs" />
+    <Compile Include="AdministrarePrescriptii_Memorie.cs" />
+    <Compile Include="AdministrareProgramari_FisierText.cs" />
+    <Compile Include="AdministrareProgramari_Memorie.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="UtilizatorNivelStocareDate.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LibrarieModele\LibrarieModele.csproj">
