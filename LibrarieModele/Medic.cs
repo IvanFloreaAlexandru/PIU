@@ -2,41 +2,33 @@
 
 namespace LibrarieModele
 {
-    public class Medic
+    public class Medic : User
     {
-        public int IdMedic;
 
-        private static readonly int indexIdMedic = 0;
+        private static readonly int indexId = 0;
         private static readonly int indexNume = 1;
         private static readonly int indexPrenume = 2;
-        private static readonly int indexCNP = 3;
-        private static readonly int indexSpecialitate = 4;
-        private static readonly int indexIdDepartament = 5;
-        private static readonly int indexTelefon = 6;
-        private static readonly int indexEmail = 7;
+        private static readonly int indexEmail = 3;
+        private static readonly int indexTelefon = 4;
+        private static readonly int indexCNP = 5;
+        private static readonly int indexSpecialitate = 6;
+        private static readonly int indexIdDepartament = 7;
         private static readonly int indexProgram = 8;
 
-        public string Nume { get; set; }
-        public string Prenume { get; set; }
         public string CNP { get; set; }
         public string Specialitate { get; set; }
         public int IdDepartament { get; set; }
-        public string Telefon { get; set; }
-        public string Email { get; set; }
         public string Program { get; set; }
+        public int IdMedic { get; set; }
 
-        public Medic()
+        public Medic() : base()
         {
-            Nume = string.Empty;
-            Prenume = string.Empty;
             CNP = string.Empty;
             Specialitate = string.Empty;
-            Telefon = string.Empty;
-            Email = string.Empty;
             Program = string.Empty;
         }
 
-        public Medic(int idMedic, string nume, string prenume, string cnp, string specialitate, int idDepartament, string telefon, string email, string program)
+        public Medic(int idMedic, string nume, string prenume, string cnp, string specialitate, int idDepartament, string telefon, string email, string program,RangUtilizator rang)
         {
             IdMedic = idMedic;
             Nume = nume;
@@ -47,37 +39,54 @@ namespace LibrarieModele
             Telefon = telefon;
             Email = email;
             Program = program;
+            Rang = rang;
         }
 
-
         public Medic(string linieFisier)
+    : base(
+        Convert.ToInt32(linieFisier.Split(',')[indexId]),
+        linieFisier.Split(',')[indexNume],
+        linieFisier.Split(',')[indexPrenume],
+        linieFisier.Split(',')[indexEmail],
+        linieFisier.Split(',')[indexTelefon],
+        RangUtilizator.Medic)
         {
             string[] dateMedic = linieFisier.Split(',');
 
-            IdMedic = Convert.ToInt32(dateMedic[indexIdMedic]);
-            Nume = dateMedic[indexNume];
-            Prenume = dateMedic[indexPrenume];
-            CNP = dateMedic[indexCNP];
-            Specialitate = dateMedic[indexSpecialitate];
-            IdDepartament = Convert.ToInt32(dateMedic[indexIdDepartament]);
-            Telefon = dateMedic[indexTelefon];
-            Email = dateMedic[indexEmail];
-            Program = dateMedic[indexProgram];
+            if (dateMedic.Length > indexCNP && dateMedic.Length > indexSpecialitate && dateMedic.Length > indexIdDepartament && dateMedic.Length > indexProgram)
+            {
+                CNP = dateMedic[indexCNP];
+                Specialitate = dateMedic[indexSpecialitate];
+
+                if (int.TryParse(dateMedic[indexIdDepartament], out int idDepartament))
+                {
+                    IdDepartament = idDepartament;
+                }
+                else
+                {
+                    Console.WriteLine("ID-ul departamentului nu este valid.");
+                }
+
+                Program = dateMedic[indexProgram];
+            }
+            else
+            {
+                Console.WriteLine("Linia de fisier nu contine suficiente date pentru a crea un medic.");
+            }
         }
 
-        public string ConversieLaSir_PentruFisier()
+
+
+
+        public override string ConversieLaSir_PentruFisier()
         {
-            return $"{IdMedic},{Nume},{Prenume},{CNP},{Specialitate},{IdDepartament},{Telefon},{Email},{Program}";
+            return $"{IdUser},{Nume},{Prenume},{Email},{Telefon},{CNP},{Specialitate},{IdDepartament},{Program}";
         }
 
-        public string InfoScurt()
+        public override string Info()
         {
-            return $"ID: {IdMedic}, Dr. {Nume} {Prenume}, Specialitate: {Specialitate}";
+            return base.Info() + $"\nCNP: {CNP}\nSpecialitate: {Specialitate}\nDepartament: {IdDepartament}\nProgram: {Program}";
         }
 
-        public string Info()
-        {
-            return $"ID: {IdMedic}\nNume: {Nume} {Prenume}\nSpecialitate: {Specialitate}\nDepartament: {IdDepartament}\nContact: {Telefon}, {Email}\nProgram: {Program}";
-        }
     }
 }

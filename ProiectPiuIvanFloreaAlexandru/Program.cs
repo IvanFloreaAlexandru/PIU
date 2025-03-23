@@ -3,24 +3,43 @@ using System.Configuration;
 using LibrarieModele;
 using NivelStocareDate;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using GestionareSpital;
 
 namespace ClinicaAPP
 {
     class Program
     {
+        private static User utilizatorCurent;
+
         static void Main()
         {
+
+            utilizatorCurent = Autentificare();
+
+            if (utilizatorCurent == null)
+            {
+                Console.WriteLine("Autentificare esuata. Aplicatia se va inchide...");
+                Console.ReadKey();
+                return;
+            }
+
+            Console.WriteLine($"Bine ati venit, {utilizatorCurent.Nume} {utilizatorCurent.Prenume}! Rang: {utilizatorCurent.Rang}");
+
             string numeFisierPacienti = ConfigurationManager.AppSettings["NumeFisierPacienti"];
             string numeFisierMedici = ConfigurationManager.AppSettings["NumeFisierMedici"];
             string numeFisierProgramari = ConfigurationManager.AppSettings["NumeFisierProgramari"];
             string numeFisierPrescriptii = ConfigurationManager.AppSettings["NumeFisierPrescriptii"];
             string numeFisierDepartamente = ConfigurationManager.AppSettings["NumeFisierDepartamente"];
+            string numeFisierUser = ConfigurationManager.AppSettings["NumeFisierUser"];
 
             AdministrarePacienti_FisierText adminPacienti = new AdministrarePacienti_FisierText(numeFisierPacienti);
             AdministrareMedici_FisierText adminMedici = new AdministrareMedici_FisierText(numeFisierMedici);
             AdministrareProgramari_FisierText adminProgramari = new AdministrareProgramari_FisierText(numeFisierProgramari);
             AdministrarePrescriptii_FisierText adminPrescriptii = new AdministrarePrescriptii_FisierText(numeFisierPrescriptii);
             AdministrareDepartamente_FisierText adminDepartamente = new AdministrareDepartamente_FisierText(numeFisierDepartamente);
+            AdministrareUser_FisierText adminUser = new AdministrareUser_FisierText(numeFisierUser);
 
             Pacient pacientNou = new Pacient();
             Medic medicNou = new Medic();
@@ -38,11 +57,25 @@ namespace ClinicaAPP
             do
             {
                 Console.WriteLine("\n======= SISTEM MANAGEMENT CLINICA =======");
-                Console.WriteLine("1. Gestionare pacienti");
-                Console.WriteLine("2. Gestionare medici");
-                Console.WriteLine("3. Gestionare programari");
-                Console.WriteLine("4. Gestionare prescriptii");
-                Console.WriteLine("5. Gestionare departamente");
+
+                if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizarePacienti))
+                    Console.WriteLine("1. Gestionare pacienti");
+
+                if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizareMedici))
+                    Console.WriteLine("2. Gestionare medici");
+
+                if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizareProgramari))
+                    Console.WriteLine("3. Gestionare programari");
+
+                if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizarePrescriptii))
+                    Console.WriteLine("4. Gestionare prescriptii");
+
+                if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizareDepartamente))
+                    Console.WriteLine("5. Gestionare departamente");
+
+                if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizareUtilizatori))
+                    Console.WriteLine("6. Gestionare utilizatori");
+
                 Console.WriteLine("X. Iesire din aplicatie");
                 Console.WriteLine("=========================================");
 
@@ -52,24 +85,51 @@ namespace ClinicaAPP
                 switch (optiune.ToUpper())
                 {
                     case "1":
-                        GestionarePacienti(adminPacienti, ref nrPacienti);
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizarePacienti))
+                            GestionarePacienti(adminPacienti, adminUser, ref nrPacienti);
+                        else
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
+                        break;
 
-                        break;
                     case "2":
-                        GestionareMedici(adminMedici, adminDepartamente, ref medicNou, ref nrMedici);
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizareMedici))
+                            GestionareMedici(adminMedici, adminDepartamente, ref medicNou, ref nrMedici);
+                        else
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
                         break;
+
                     case "3":
-                        GestionareProgramari(adminProgramari, adminPacienti, adminMedici, ref programareNoua, ref nrProgramari);
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizareProgramari))
+                            GestionareProgramari(adminProgramari, adminPacienti, adminMedici, ref programareNoua, ref nrProgramari);
+                        else
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
                         break;
+
                     case "4":
-                        GestionarePrescriptii(adminPrescriptii, adminPacienti, adminMedici, ref prescriptieNoua, ref nrPrescriptii);
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizarePrescriptii))
+                            GestionarePrescriptii(adminPrescriptii, adminPacienti, adminMedici, ref prescriptieNoua, ref nrPrescriptii);
+                        else
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
                         break;
+
                     case "5":
-                        GestionareDepartamente(adminDepartamente, ref departamentNou, ref nrDepartamente);
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizareDepartamente))
+                            GestionareDepartamente(adminDepartamente, ref departamentNou, ref nrDepartamente);
+                        else
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
                         break;
+
+                    case "6":
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizareUtilizatori))
+                            GestionareUser();
+                        else
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
+                        break;
+
                     case "X":
                         Console.WriteLine("Aplicatia se inchide...");
                         return;
+
                     default:
                         Console.WriteLine("Optiune inexistenta. Incercati din nou.");
                         break;
@@ -77,16 +137,101 @@ namespace ClinicaAPP
             } while (optiune.ToUpper() != "X");
         }
 
-        private static void GestionarePacienti(AdministrarePacienti_FisierText adminPacienti, ref int nrPacienti)
+
+        private static User Autentificare()
         {
+            AdministrareUser_FisierText adminUser = new AdministrareUser_FisierText("User.txt");
+            AdministrareUser_Memorie adminUserMemorie = new AdministrareUser_Memorie();
+
+            int nrUtilizatori;
+            var utilizatoriDinFisier = adminUser.GetUsers(out nrUtilizatori);
+
+            if (nrUtilizatori == 0)
+            {
+                Console.WriteLine("Nu exista utilizatori in sistem. Se va crea un utilizator Director implicit.");
+
+                User directorImplicit = new User
+                {
+                    IdUser = 1,
+                    Nume = "Admin",
+                    Prenume = "System",
+                    Email = "admin@clinica.ro",
+                    Parola = "admin",
+                    Rang = RangUtilizator.Director
+                };
+
+                adminUser.AddUser(directorImplicit);
+                Console.WriteLine("Utilizator Director creat. Va rugam sa va autentificati.");
+                Console.WriteLine("Email: admin@clinica.ro, Parola: admin");
+                Console.WriteLine("Dupa autentificare, va recomandam sa schimbati parola implicita.");
+                Console.WriteLine();
+
+                utilizatoriDinFisier = adminUser.GetUsers(out nrUtilizatori);
+            }
+
+            foreach (var user in utilizatoriDinFisier)
+            {
+                adminUserMemorie.AddUser(user);
+            }
+
+            int incercari = 0;
+            const int MAX_INCERCARI = 3;
+
+            while (incercari < MAX_INCERCARI)
+            {
+                Console.WriteLine("=== Autentificare ===");
+                Console.Write("Email: ");
+                string email = Console.ReadLine();
+                Console.Write("Parola: ");
+                string parola = Console.ReadLine();
+
+                User utilizatorGasit = null;
+
+                foreach (var user in utilizatoriDinFisier)
+                {
+                    if (user.Email == email && user.Parola == parola)
+                    {
+                        utilizatorGasit = user;
+                        break;
+                    }
+                }
+
+                if (utilizatorGasit != null)
+                {
+                    Console.WriteLine("Autentificare reusita!");
+                    return utilizatorGasit;
+                }
+
+                incercari++;
+                Console.WriteLine($"Email sau parola incorecte! Mai aveti {MAX_INCERCARI - incercari} incercari.");
+            }
+
+            Console.WriteLine("Prea multe incercari esuate. Aplicatia se va inchide.");
+            return null;
+        }
+
+
+        private static void GestionareUser()
+        {
+            AdministrareUser_FisierText adminUser = new AdministrareUser_FisierText("User.txt");
+            AdministrareUser_Memorie adminUserMemorie = new AdministrareUser_Memorie();
+
+            int nrUtilizatori;
+            var utilizatoriDinFisier = adminUser.GetUsers(out nrUtilizatori);
+
+            foreach (var user in utilizatoriDinFisier)
+            {
+                adminUserMemorie.AddUser(user);
+            }
+
             string optiune;
             do
             {
-                Console.WriteLine("\n--- Gestionare Pacienti ---");
-                Console.WriteLine("C. Adaugare pacient nou");
-                Console.WriteLine("A. Afisare toti pacientii");
-                Console.WriteLine("I. Afisare informatii pacient dupa CNP");
-                Console.WriteLine("U. Actualizare informatii pacient");
+                Console.WriteLine("\n--- Gestionare Utilizatori ---");
+                Console.WriteLine("C. Creare user nou");
+                Console.WriteLine("M. Modificare user existent");
+                Console.WriteLine("S. Stergere user");
+                Console.WriteLine("A. Afisare toti utilizatorii");
                 Console.WriteLine("R. Revenire la meniul principal");
 
                 Console.Write("\nAlegeti o optiune: ");
@@ -95,54 +240,129 @@ namespace ClinicaAPP
                 switch (optiune.ToUpper())
                 {
                     case "C":
-                        Pacient pacientNou = CitirePacientTastatura();
+                        Console.Write("Introduceti numele: ");
+                        string nume = Console.ReadLine();
+                        Console.Write("Introduceti prenumele: ");
+                        string prenume = Console.ReadLine();
+                        Console.Write("Introduceti email-ul: ");
+                        string email = Console.ReadLine();
+                        Console.Write("Introduceti parola: ");
+                        string parola = Console.ReadLine();
 
+                        Console.WriteLine("Alegeti rangul: ");
+                        foreach (RangUtilizator rang in Enum.GetValues(typeof(RangUtilizator)))
+                        {
+                            Console.WriteLine($"{(int)rang}. {rang}");
+                        }
+                        int rangInt;
+                        while (!int.TryParse(Console.ReadLine(), out rangInt) || !Enum.IsDefined(typeof(RangUtilizator), rangInt))
+                        {
+                            Console.WriteLine("Optiune invalida, incercati din nou.");
+                        }
+                        RangUtilizator rangNou = (RangUtilizator)rangInt;
 
-                        int idPacient = ++nrPacienti;
-                        pacientNou.IdPacient = idPacient;
+                        User userNou = new User
+                        {
+                            IdUser = adminUserMemorie.GetUsers(out _).Length + 1,
+                            Nume = nume,
+                            Prenume = prenume,
+                            Email = email,
+                            Parola = parola,
+                            Rang = rangNou
+                        };
 
-                        adminPacienti.AddPacient(pacientNou);
+                        adminUserMemorie.AddUser(userNou);
+                        adminUser.AddUser(userNou);
 
-                        Console.WriteLine("Pacient adaugat cu succes!");
+                        Console.WriteLine("User creat cu succes!");
+                        break;
+
+                    case "M":
+                        Console.Write("Introduceti ID-ul userului de modificat: ");
+                        int idUserModificat;
+                        if (!int.TryParse(Console.ReadLine(), out idUserModificat))
+                        {
+                            Console.WriteLine("ID invalid.");
+                            break;
+                        }
+
+                        User userExistent = adminUserMemorie.GetUserDupaId(idUserModificat);
+                        if (userExistent == null)
+                        {
+                            Console.WriteLine("Userul nu exista!");
+                            break;
+                        }
+
+                        Console.Write("Introduceti noul nume: ");
+                        string numeModificat = Console.ReadLine();
+                        Console.Write("Introduceti noul prenume: ");
+                        string prenumeModificat = Console.ReadLine();
+                        Console.Write("Introduceti noul email: ");
+                        string emailModificat = Console.ReadLine();
+                        Console.Write("Introduceti noua parola: ");
+                        string parolaModificata = Console.ReadLine();
+
+                        Console.WriteLine("Alegeti noul rang: ");
+                        foreach (RangUtilizator rang in Enum.GetValues(typeof(RangUtilizator)))
+                        {
+                            Console.WriteLine($"{(int)rang}. {rang}");
+                        }
+                        int rangModificatInt;
+                        while (!int.TryParse(Console.ReadLine(), out rangModificatInt) || !Enum.IsDefined(typeof(RangUtilizator), rangModificatInt))
+                        {
+                            Console.WriteLine("Optiune invalida, incercati din nou.");
+                        }
+                        RangUtilizator rangModificat = (RangUtilizator)rangModificatInt;
+
+                        userExistent.Nume = numeModificat;
+                        userExistent.Prenume = prenumeModificat;
+                        userExistent.Email = emailModificat;
+                        userExistent.Parola = parolaModificata;
+                        userExistent.Rang = rangModificat;
+
+                        adminUserMemorie.UpdateUser(userExistent);
+                        adminUser.UpdateUser(userExistent);
+
+                        Console.WriteLine("User modificat cu succes!");
+                        break;
+
+                    case "S":
+                        Console.Write("Introduceti ID-ul userului de sters: ");
+                        int idUserSters;
+                        if (!int.TryParse(Console.ReadLine(), out idUserSters))
+                        {
+                            Console.WriteLine("ID invalid.");
+                            break;
+                        }
+
+                        User userDeSters = adminUserMemorie.GetUserDupaId(idUserSters);
+                        if (userDeSters == null)
+                        {
+                            Console.WriteLine("Userul nu exista!");
+                            break;
+                        }
+
+                        adminUserMemorie.RemoveUser(idUserSters);
+                        adminUser.RemoveUser(idUserSters);
+
+                        Console.WriteLine("User sters cu succes!");
                         break;
 
                     case "A":
-                        Pacient[] pacienti = adminPacienti.GetPacienti(out nrPacienti);
-                        AfisarePacienti(pacienti, nrPacienti);
-                        break;
+                        int nrUtilizatoriMemorie;
+                        var usersMemorie = adminUserMemorie.GetUsers(out nrUtilizatoriMemorie);
 
-                    case "I":
-                        Console.Write("Introduceti CNP-ul pacientului: ");
-                        string cnp = Console.ReadLine();
-
-                        Pacient pacientCautat = adminPacienti.GetPacientDupaCNP(cnp);
-                        if (pacientCautat != null)
+                        if (nrUtilizatoriMemorie == 0)
                         {
-                            Pacient[] pacientiGasiti = new Pacient[] { pacientCautat };
-                            AfisarePacienti(pacientiGasiti, nrPacienti);
+                            Console.WriteLine("Nu exista utilizatori.");
                         }
                         else
                         {
-                            Console.WriteLine("Nu exista pacient cu acest CNP!");
-                        }
-                        break;
-
-                    case "U":
-                        Console.Write("Introduceti CNP-ul pacientului pentru actualizare: ");
-                        string cnpUpdate = Console.ReadLine();
-
-                        Pacient pacientUpdate = adminPacienti.GetPacientDupaCNP(cnpUpdate);
-                        if (pacientUpdate != null)
-                        {
-                            Pacient pacientActualizat = CitirePacientTastatura();
-                            pacientActualizat.IdPacient = pacientUpdate.IdPacient;
-
-                            adminPacienti.UpdatePacient(pacientActualizat);
-                            Console.WriteLine("Pacient actualizat cu succes!");
-                        }
-                        else
-                        {
-                            Console.WriteLine("Nu exista pacient cu acest CNP!");
+                            Console.WriteLine("Utilizatori in memorie:");
+                            foreach (var user in usersMemorie)
+                            {
+                                Console.WriteLine($"ID: {user.IdUser}, Nume: {user.Nume} {user.Prenume}, Email: {user.Email}, Rang: {user.Rang}");
+                            }
                         }
                         break;
 
@@ -150,7 +370,166 @@ namespace ClinicaAPP
                         return;
 
                     default:
-                        Console.WriteLine("Optiune inexistenta. Incercati din nou.");
+                        Console.WriteLine("Optiune invalida, incercati din nou.");
+                        break;
+                }
+            } while (optiune.ToUpper() != "R");
+        }
+
+
+        private static void GestionarePacienti(AdministrarePacienti_FisierText adminPacienti, AdministrareUser_FisierText adminUser, ref int nrPacienti)
+        {
+            string optiune;
+            string numeFisierPacienti = ConfigurationManager.AppSettings["NumeFisierPacienti"];
+            string locatieFisierSolutie = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName;
+            string caleCompletaFisier = Path.Combine(locatieFisierSolutie, numeFisierPacienti);
+
+            do
+            {
+                Console.WriteLine("\n--- Gestionare Pacienti ---");
+
+                if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.AdaugarePacienti))
+                    Console.WriteLine("A. Adaugare pacient");
+
+                if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.ModificarePacienti))
+                    Console.WriteLine("M. Modificare pacient");
+
+                if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.StergerePacienti))
+                    Console.WriteLine("S. Stergere pacient");
+
+                if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizarePacienti))
+                    Console.WriteLine("V. Vizualizare pacienti");
+
+                Console.WriteLine("R. Revenire la meniul principal");
+
+                Console.Write("\nAlegeti o optiune: ");
+                optiune = Console.ReadLine();
+
+                switch (optiune.ToUpper())
+                {
+                    case "A":
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.AdaugarePacienti))
+                        {
+                            Pacient pacientNou = CitirePacientTastatura();
+
+
+                            int maxId = adminPacienti.GetMaxIdPacient();
+
+                            pacientNou.IdPacient = maxId + 1;
+
+                            nrPacienti = maxId + 1;
+
+                            adminPacienti.AddPacient(pacientNou, caleCompletaFisier);
+                            Console.WriteLine("Pacient adaugat cu succes!");
+
+                        }
+                        else
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
+                        break;
+
+                    case "M":
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.ModificarePacienti))
+                        {
+                            Console.Write("Introduceti CNP-ul pacientului pentru actualizare: ");
+                            string cnpUpdate = Console.ReadLine();
+
+                            Pacient pacientUpdate = adminPacienti.GetPacientDupaCNP(cnpUpdate);
+                            if (pacientUpdate != null)
+                            {
+                                Console.WriteLine($"Pacient gasit pentru actualizare: ID: {pacientUpdate.IdPacient} - CNP: {pacientUpdate.CNP}");
+                                Pacient pacientActualizat = CitirePacientTastatura();
+                                pacientActualizat.IdPacient = pacientUpdate.IdPacient;
+
+                                adminPacienti.UpdatePacient(pacientActualizat, caleCompletaFisier);
+                                Console.WriteLine("Pacient actualizat cu succes!");
+                            }
+                            else
+                            {
+                                Console.WriteLine("Nu exista pacient cu acest CNP!");
+                            }
+                        }
+                        else
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
+                        break;
+
+                    case "S":
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.StergerePacienti))
+                        {
+                            Console.Write("Introduceti CNP-ul pacientului pentru stergere: ");
+                            string cnpDelete = Console.ReadLine();
+
+                            Pacient pacientDelete = adminPacienti.GetPacientDupaCNP(cnpDelete);
+                            if (pacientDelete != null)
+                            {
+                                Console.WriteLine($"Pacient gasit pentru stergere: ID: {pacientDelete.IdPacient} - CNP: {pacientDelete.CNP}");
+                                Console.Write("Confirmati stergerea (D/N): ");
+                                string confirmare = Console.ReadLine();
+
+                                if (confirmare.ToUpper() == "D")
+                                {
+                                    adminPacienti.DeletePacient(pacientDelete, caleCompletaFisier);
+                                    Console.WriteLine("Pacient sters cu succes!");
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Operatiunea de stergere a fost anulata.");
+                                }
+                            }
+                            else
+                            {
+                                Console.WriteLine("Nu exista pacient cu acest CNP!");
+                            }
+                        }
+                        else
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
+                        break;
+
+                    case "V":
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizarePacienti))
+                        {
+                            Console.WriteLine("\n--- Optiuni de vizualizare ---");
+                            Console.WriteLine("1. Afisare toti pacientii");
+                            Console.WriteLine("2. Cautare pacient dupa CNP");
+                            Console.Write("Alegeti optiunea: ");
+                            string optiuneVizualizare = Console.ReadLine();
+
+                            switch (optiuneVizualizare)
+                            {
+                                case "1":
+                                    Pacient[] pacienti = adminPacienti.GetPacienti(out nrPacienti);
+                                    AfisarePacienti(pacienti, nrPacienti);
+                                    break;
+
+                                case "2":
+                                    Console.Write("Introduceti CNP-ul pacientului: ");
+                                    string cnp = Console.ReadLine();
+
+                                    Pacient pacientCautat = adminPacienti.GetPacientDupaCNP(cnp);
+                                    if (pacientCautat != null)
+                                    {
+                                        Pacient[] pacientiGasiti = new Pacient[] { pacientCautat };
+                                        AfisarePacienti(pacientiGasiti, 1);
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine("Nu exista pacient cu acest CNP!");
+                                    }
+                                    break;
+
+                                default:
+                                    Console.WriteLine("Optiune invalida!");
+                                    break;
+                            }
+                        }
+                        else
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
+                        break;
+
+                    case "R":
+                        return;
+
+                    default:
+                        Console.WriteLine("Optiune invalida, incercati din nou.");
                         break;
                 }
             } while (optiune.ToUpper() != "R");
@@ -159,18 +538,32 @@ namespace ClinicaAPP
 
 
 
+
         private static void GestionareProgramari(AdministrareProgramari_FisierText adminProgramari, AdministrarePacienti_FisierText adminPacienti, AdministrareMedici_FisierText adminMedici, ref Programare programareNoua, ref int nrProgramari)
         {
             string optiune;
+            string numeFisierProgramari = ConfigurationManager.AppSettings["NumeFisierProgramari"];
+            string locatieFisierSolutie = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName;
+            string caleCompletaFisier = Path.Combine(locatieFisierSolutie, numeFisierProgramari);
+
             do
             {
                 Console.WriteLine("\n--- Gestionare Programari ---");
-                Console.WriteLine("C. Creare programare noua");
-                Console.WriteLine("A. Afisare toate programarile");
-                Console.WriteLine("P. Afisare programari pentru un pacient");
-                Console.WriteLine("M. Afisare programari pentru un medic");
-                Console.WriteLine("D. Afisare programari pentru o data");
-                Console.WriteLine("U. Actualizare status programare");
+
+                if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.AdaugareProgramari))
+                    Console.WriteLine("C. Creare programare noua");
+
+                if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizareProgramari))
+                {
+                    Console.WriteLine("A. Afisare toate programarile");
+                    Console.WriteLine("P. Afisare programari pentru un pacient");
+                    Console.WriteLine("M. Afisare programari pentru un medic");
+                    Console.WriteLine("D. Afisare programari pentru o data");
+                }
+
+                if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.ModificareProgramari))
+                    Console.WriteLine("U. Actualizare status programare");
+
                 Console.WriteLine("R. Revenire la meniul principal");
 
                 Console.Write("\nAlegeti o optiune: ");
@@ -179,155 +572,204 @@ namespace ClinicaAPP
                 switch (optiune.ToUpper())
                 {
                     case "C":
-                        int nrPacientiTemp, nrMediciTemp;
-                        adminPacienti.GetPacienti(out nrPacientiTemp);
-                        adminMedici.GetMedici(out nrMediciTemp);
-
-                        if (nrPacientiTemp == 0 || nrMediciTemp == 0)
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.AdaugareProgramari))
                         {
-                            Console.WriteLine("Nu exista suficienti pacienti sau medici pentru a crea o programare!");
-                            break;
+                            int nrPacientiTemp, nrMediciTemp;
+                            adminPacienti.GetPacienti(out nrPacientiTemp);
+                            adminMedici.GetMedici(out nrMediciTemp);
+
+                            if (nrPacientiTemp == 0 || nrMediciTemp == 0)
+                            {
+                                Console.WriteLine("Nu exista suficienti pacienti sau medici pentru a crea o programare!");
+                                break;
+                            }
+
+                            programareNoua = CitireProgramareTastatura(adminPacienti, adminMedici);
+
+                            int idProgramare = ++nrProgramari;
+                            programareNoua.IdProgramare = idProgramare;
+                            adminProgramari.AddProgramare(programareNoua, caleCompletaFisier);
+
+                            Console.WriteLine("Programare creata cu succes!");
                         }
-
-                        programareNoua = CitireProgramareTastatura(adminPacienti, adminMedici);
-
-                        int idProgramare = ++nrProgramari;
-                        programareNoua.IdProgramare = idProgramare;
-                        adminProgramari.AddProgramare(programareNoua);
-
-                        Console.WriteLine("Programare creata cu succes!");
+                        else
+                        {
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
+                        }
                         break;
+
                     case "A":
-                        Programare[] programari = adminProgramari.GetProgramari(out nrProgramari);
-                        AfisareProgramari(programari, nrProgramari, adminPacienti, adminMedici);
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizareProgramari))
+                        {
+                            Programare[] programari = adminProgramari.GetProgramari(out nrProgramari);
+                            AfisareProgramari(programari, nrProgramari, adminPacienti, adminMedici);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
+                        }
                         break;
+
                     case "P":
-                        Console.Write("Introduceti CNP-ul pacientului: ");
-                        string cnpPacient = Console.ReadLine();
-
-                        Pacient pacient = adminPacienti.GetPacientDupaCNP(cnpPacient);
-                        if (pacient != null)
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizareProgramari))
                         {
-                            Programare[] programariPacient = adminProgramari.GetProgramariDupaPacient(pacient.IdPacient);
-                            if (programariPacient != null && programariPacient.Length > 0)
+                            Console.Write("Introduceti CNP-ul pacientului: ");
+                            string cnpPacient = Console.ReadLine();
+
+                            Pacient pacient = adminPacienti.GetPacientDupaCNP(cnpPacient);
+                            if (pacient != null)
                             {
-                                Console.WriteLine($"Programari pentru pacientul {pacient.Nume} {pacient.Prenume}:");
-                                for (int i = 0; i < programariPacient.Length; i++)
+                                Programare[] programariPacient = adminProgramari.GetProgramariDupaPacient(pacient.IdPacient);
+                                if (programariPacient != null && programariPacient.Length > 0)
                                 {
-                                    if (programariPacient[i] != null)
+                                    Console.WriteLine($"Programari pentru pacientul {pacient.Nume} {pacient.Prenume}:");
+                                    for (int i = 0; i < programariPacient.Length; i++)
                                     {
-                                        AfisareProgramare(programariPacient[i], adminPacienti, adminMedici);
+                                        if (programariPacient[i] != null)
+                                        {
+                                            AfisareProgramare(programariPacient[i], adminPacienti, adminMedici);
+                                        }
                                     }
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Nu exista programari pentru acest pacient!");
                                 }
                             }
                             else
                             {
-                                Console.WriteLine("Nu exista programari pentru acest pacient!");
+                                Console.WriteLine("Nu exista pacient cu acest CNP!");
                             }
                         }
                         else
                         {
-                            Console.WriteLine("Nu exista pacient cu acest CNP!");
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
                         }
                         break;
+
                     case "M":
-                        Console.Write("Introducti ID-ul medicului: ");
-                        int idMedic = Convert.ToInt32(Console.ReadLine());
-
-                        Medic medic = adminMedici.GetMedicDupaId(idMedic);
-                        if (medic != null)
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizareProgramari))
                         {
-                            Programare[] programariMedic = adminProgramari.GetProgramariDupaMedic(idMedic);
-                            if (programariMedic != null && programariMedic.Length > 0)
+                            Console.Write("Introducti ID-ul medicului: ");
+                            int idMedic = Convert.ToInt32(Console.ReadLine());
+
+                            Medic medic = adminMedici.GetMedicDupaId(idMedic);
+                            if (medic != null)
                             {
-                                Console.WriteLine($"Programari pentru medicul {medic.Nume} {medic.Prenume}:");
-                                for (int i = 0; i < programariMedic.Length; i++)
+                                Programare[] programariMedic = adminProgramari.GetProgramariDupaMedic(idMedic);
+                                if (programariMedic != null && programariMedic.Length > 0)
                                 {
-                                    if (programariMedic[i] != null)
+                                    Console.WriteLine($"Programari pentru medicul {medic.Nume} {medic.Prenume}:");
+                                    for (int i = 0; i < programariMedic.Length; i++)
                                     {
-                                        AfisareProgramare(programariMedic[i], adminPacienti, adminMedici);
+                                        if (programariMedic[i] != null)
+                                        {
+                                            AfisareProgramare(programariMedic[i], adminPacienti, adminMedici);
+                                        }
                                     }
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Nu exista programari pentru acest medic!");
                                 }
                             }
                             else
                             {
-                                Console.WriteLine("Nu exista programari pentru acest medic!");
+                                Console.WriteLine("Nu exista medic cu acest ID!");
                             }
                         }
                         else
                         {
-                            Console.WriteLine("Nu exista medic cu acest ID!");
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
                         }
                         break;
+
                     case "D":
-                        Console.Write("Introduceti data (format: zz.ll.aaaa): ");
-                        string dataString = Console.ReadLine();
-
-                        if (DateTime.TryParse(dataString, out DateTime data))
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizareProgramari))
                         {
-                            Programare[] programariData = adminProgramari.GetProgramariDupaData(data);
-                            if (programariData != null && programariData.Length > 0)
+                            Console.Write("Introduceti data (format: zz.ll.aaaa): ");
+                            string dataString = Console.ReadLine();
+
+                            if (DateTime.TryParse(dataString, out DateTime data))
                             {
-                                Console.WriteLine($"Programari pentru data {data.ToShortDateString()}:");
-                                for (int i = 0; i < programariData.Length; i++)
+                                Programare[] programariData = adminProgramari.GetProgramariDupaData(data);
+                                if (programariData != null && programariData.Length > 0)
                                 {
-                                    if (programariData[i] != null)
+                                    Console.WriteLine($"Programari pentru data {data.ToShortDateString()}:");
+                                    for (int i = 0; i < programariData.Length; i++)
                                     {
-                                        AfisareProgramare(programariData[i], adminPacienti, adminMedici);
+                                        if (programariData[i] != null)
+                                        {
+                                            AfisareProgramare(programariData[i], adminPacienti, adminMedici);
+                                        }
                                     }
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Nu exista programari pentru aceasta data!");
                                 }
                             }
                             else
                             {
-                                Console.WriteLine("Nu exista programari pentru aceasta data!");
+                                Console.WriteLine("Format data invalid!");
                             }
                         }
                         else
                         {
-                            Console.WriteLine("Format data invalid!");
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
                         }
                         break;
+
                     case "U":
-                        Console.Write("Introduceti ID-ul programarii pentru actualizare: ");
-                        int idProgramareUpdate = Convert.ToInt32(Console.ReadLine());
-
-                        Programare programareUpdate = adminProgramari.GetProgramareDupaId(idProgramareUpdate);
-                        if (programareUpdate != null)
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.ModificareProgramari))
                         {
-                            Console.WriteLine("Status curent: " + programareUpdate.Status);
-                            Console.WriteLine("Alegeti noul status:");
-                            Console.WriteLine("1. Programat");
-                            Console.WriteLine("2. Confirmat");
-                            Console.WriteLine("3. In asteptare");
-                            Console.WriteLine("4. Finalizat");
-                            Console.WriteLine("5. Anulat");
+                            Console.Write("Introduceti ID-ul programarii pentru actualizare: ");
+                            int idProgramareUpdate = Convert.ToInt32(Console.ReadLine());
 
-                            int optiuneStatus = Convert.ToInt32(Console.ReadLine());
-                            string nouStatus = "Programat";
-
-                            switch (optiuneStatus)
+                            Programare programareUpdate = adminProgramari.GetProgramareDupaId(idProgramareUpdate);
+                            if (programareUpdate != null)
                             {
-                                case 1: nouStatus = "Programat"; break;
-                                case 2: nouStatus = "Confirmat"; break;
-                                case 3: nouStatus = "In asteptare"; break;
-                                case 4: nouStatus = "Finalizat"; break;
-                                case 5: nouStatus = "Anulat"; break;
-                                default:
-                                    Console.WriteLine("Optiune invalida. Status neschimbat.");
-                                    break;
-                            }
+                                Console.WriteLine("Status curent: " + programareUpdate.Status);
+                                Console.WriteLine("Alegeti noul status:");
+                                Console.WriteLine("1. Programat");
+                                Console.WriteLine("2. Confirmat");
+                                Console.WriteLine("3. In asteptare");
+                                Console.WriteLine("4. Finalizat");
+                                Console.WriteLine("5. Anulat");
 
-                            programareUpdate.Status = nouStatus;
-                            adminProgramari.UpdateProgramare(programareUpdate);
-                            Console.WriteLine("Status programare actualizat cu succes!");
+                                int optiuneStatus = Convert.ToInt32(Console.ReadLine());
+                                string nouStatus = "Programat";
+
+                                switch (optiuneStatus)
+                                {
+                                    case 1: nouStatus = "Programat"; break;
+                                    case 2: nouStatus = "Confirmat"; break;
+                                    case 3: nouStatus = "In asteptare"; break;
+                                    case 4: nouStatus = "Finalizat"; break;
+                                    case 5: nouStatus = "Anulat"; break;
+                                    default:
+                                        Console.WriteLine("Optiune invalida. Status neschimbat.");
+                                        break;
+                                }
+
+                                programareUpdate.Status = nouStatus;
+                                adminProgramari.UpdateProgramare(programareUpdate, caleCompletaFisier);
+                                Console.WriteLine("Status programare actualizat cu succes!");
+                            }
+                            else
+                            {
+                                Console.WriteLine("Nu exista programare cu acest ID!");
+                            }
                         }
                         else
                         {
-                            Console.WriteLine("Nu exista programare cu acest ID!");
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
                         }
                         break;
+
                     case "R":
                         return;
+
                     default:
                         Console.WriteLine("Optiune inexistenta. Incercati din nou.");
                         break;
@@ -338,14 +780,25 @@ namespace ClinicaAPP
         private static void GestionarePrescriptii(AdministrarePrescriptii_FisierText adminPrescriptii, AdministrarePacienti_FisierText adminPacienti, AdministrareMedici_FisierText adminMedici, ref Prescriptie prescriptieNoua, ref int nrPrescriptii)
         {
             string optiune;
+            string numeFisierPrescriptii = ConfigurationManager.AppSettings["NumeFisierPrescriptii"];
+            string locatieFisierSolutie = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName;
+            string caleCompletaFisier = Path.Combine(locatieFisierSolutie, numeFisierPrescriptii);
+
             do
             {
                 Console.WriteLine("\n--- Gestionare Prescriptii ---");
-                Console.WriteLine("C. Creare prescriptie noua");
-                Console.WriteLine("A. Afisare toate prescriptiile");
-                Console.WriteLine("P. Afisare prescriptii pentru un pacient");
-                Console.WriteLine("M. Afisare prescriptii emise de un medic");
-                Console.WriteLine("D. Afisare prescriptii pentru o data");
+
+                if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.AdaugarePrescriptii))
+                    Console.WriteLine("C. Creare prescriptie noua");
+
+                if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizarePrescriptii))
+                {
+                    Console.WriteLine("A. Afisare toate prescriptiile");
+                    Console.WriteLine("P. Afisare prescriptii pentru un pacient");
+                    Console.WriteLine("M. Afisare prescriptii emise de un medic");
+                    Console.WriteLine("D. Afisare prescriptii pentru o data");
+                }
+
                 Console.WriteLine("R. Revenire la meniul principal");
 
                 Console.Write("\nAlegeti o optiune: ");
@@ -354,118 +807,159 @@ namespace ClinicaAPP
                 switch (optiune.ToUpper())
                 {
                     case "C":
-                        int nrPacientiTemp, nrMediciTemp;
-                        adminPacienti.GetPacienti(out nrPacientiTemp);
-                        adminMedici.GetMedici(out nrMediciTemp);
-
-                        if (nrPacientiTemp == 0 || nrMediciTemp == 0)
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.AdaugarePrescriptii))
                         {
-                            Console.WriteLine("Nu exista suficienti pacienti sau medici pentru a crea o prescriptie!");
-                            break;
+                            int nrPacientiTemp, nrMediciTemp;
+                            adminPacienti.GetPacienti(out nrPacientiTemp);
+                            adminMedici.GetMedici(out nrMediciTemp);
+
+                            if (nrPacientiTemp == 0 || nrMediciTemp == 0)
+                            {
+                                Console.WriteLine("Nu exista suficienti pacienti sau medici pentru a crea o prescriptie!");
+                                break;
+                            }
+
+                            prescriptieNoua = CitirePrescriptieTastatura(adminPacienti, adminMedici);
+
+                            int idPrescriptie = ++nrPrescriptii;
+                            prescriptieNoua.IdPrescriptie = idPrescriptie;
+                            adminPrescriptii.AddPrescriptie(prescriptieNoua, caleCompletaFisier);
+
+                            Console.WriteLine("Prescriptie creata cu succes!");
                         }
-
-                        prescriptieNoua = CitirePrescriptieTastatura(adminPacienti, adminMedici);
-
-                        int idPrescriptie = ++nrPrescriptii;
-                        prescriptieNoua.IdPrescriptie = idPrescriptie;
-                        adminPrescriptii.AddPrescriptie(prescriptieNoua);
-
-                        Console.WriteLine("Prescriptie creata cu succes!");
+                        else
+                        {
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
+                        }
                         break;
+
                     case "A":
-                        Prescriptie[] prescriptii = adminPrescriptii.GetPrescriptii(out nrPrescriptii);
-                        AfisarePrescriptii(prescriptii, nrPrescriptii, adminPacienti, adminMedici);
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizarePrescriptii))
+                        {
+                            Prescriptie[] prescriptii = adminPrescriptii.GetPrescriptii(out nrPrescriptii);
+                            AfisarePrescriptii(prescriptii, nrPrescriptii, adminPacienti, adminMedici);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
+                        }
                         break;
+
                     case "P":
-                        Console.Write("Introduceti CNP-ul pacientului: ");
-                        string cnpPacient = Console.ReadLine();
-
-                        Pacient pacient = adminPacienti.GetPacientDupaCNP(cnpPacient);
-                        if (pacient != null)
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizarePrescriptii))
                         {
-                            Prescriptie[] prescriptiiPacient = adminPrescriptii.GetPrescriptiiDupaPacient(pacient.IdPacient);
-                            if (prescriptiiPacient != null && prescriptiiPacient.Length > 0)
+                            Console.Write("Introduceti CNP-ul pacientului: ");
+                            string cnpPacient = Console.ReadLine();
+
+                            Pacient pacient = adminPacienti.GetPacientDupaCNP(cnpPacient);
+                            if (pacient != null)
                             {
-                                Console.WriteLine($"Prescriptii pentru pacientul {pacient.Nume} {pacient.Prenume}:");
-                                for (int i = 0; i < prescriptiiPacient.Length; i++)
+                                Prescriptie[] prescriptiiPacient = adminPrescriptii.GetPrescriptiiDupaPacient(pacient.IdPacient);
+                                if (prescriptiiPacient != null && prescriptiiPacient.Length > 0)
                                 {
-                                    if (prescriptiiPacient[i] != null)
+                                    Console.WriteLine($"Prescriptii pentru pacientul {pacient.Nume} {pacient.Prenume}:");
+                                    for (int i = 0; i < prescriptiiPacient.Length; i++)
                                     {
-                                        AfisarePrescriptie(prescriptiiPacient[i], adminPacienti, adminMedici);
+                                        if (prescriptiiPacient[i] != null)
+                                        {
+                                            AfisarePrescriptie(prescriptiiPacient[i], adminPacienti, adminMedici);
+                                        }
                                     }
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Nu exista prescriptii pentru acest pacient!");
                                 }
                             }
                             else
                             {
-                                Console.WriteLine("Nu exista prescriptii pentru acest pacient!");
+                                Console.WriteLine("Nu exista pacient cu acest CNP!");
                             }
                         }
                         else
                         {
-                            Console.WriteLine("Nu exista pacient cu acest CNP!");
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
                         }
                         break;
+
                     case "M":
-                        Console.Write("Introduceti ID-ul medicului: ");
-                        int idMedic = Convert.ToInt32(Console.ReadLine());
-
-                        Medic medic = adminMedici.GetMedicDupaId(idMedic);
-                        if (medic != null)
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizarePrescriptii))
                         {
-                            Prescriptie[] prescriptiiMedic = adminPrescriptii.GetPrescriptiiDupaMedic(idMedic);
-                            if (prescriptiiMedic != null && prescriptiiMedic.Length > 0)
+                            Console.Write("Introduceti ID-ul medicului: ");
+                            int idMedic = Convert.ToInt32(Console.ReadLine());
+
+                            Medic medic = adminMedici.GetMedicDupaId(idMedic);
+                            if (medic != null)
                             {
-                                Console.WriteLine($"Prescriptii emise de medicul {medic.Nume} {medic.Prenume}:");
-                                for (int i = 0; i < prescriptiiMedic.Length; i++)
+                                Prescriptie[] prescriptiiMedic = adminPrescriptii.GetPrescriptiiDupaMedic(idMedic);
+                                if (prescriptiiMedic != null && prescriptiiMedic.Length > 0)
                                 {
-                                    if (prescriptiiMedic[i] != null)
+                                    Console.WriteLine($"Prescriptii emise de medicul {medic.Nume} {medic.Prenume}:");
+                                    for (int i = 0; i < prescriptiiMedic.Length; i++)
                                     {
-                                        AfisarePrescriptie(prescriptiiMedic[i], adminPacienti, adminMedici);
+                                        if (prescriptiiMedic[i] != null)
+                                        {
+                                            AfisarePrescriptie(prescriptiiMedic[i], adminPacienti, adminMedici);
+                                        }
                                     }
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Nu exista prescriptii emise de acest medic!");
                                 }
                             }
                             else
                             {
-                                Console.WriteLine("Nu exista prescriptii emise de acest medic!");
+                                Console.WriteLine("Nu exista medic cu acest ID!");
                             }
                         }
                         else
                         {
-                            Console.WriteLine("Nu exista medic cu acest ID!");
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
                         }
                         break;
+
                     case "D":
-                        Console.Write("Introduceti data (format: zz.ll.aaaa): ");
-                        string dataString = Console.ReadLine();
-
-                        if (DateTime.TryParse(dataString, out DateTime data))
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizarePrescriptii))
                         {
-                            Prescriptie[] prescriptiiData = adminPrescriptii.GetPrescriptiiDupaData(data);
-                            if (prescriptiiData != null && prescriptiiData.Length > 0)
+                            Console.Write("Introduceti data (format: zz.ll.aaaa): ");
+                            string dataString = Console.ReadLine();
+
+                            if (DateTime.TryParse(dataString, out DateTime data))
                             {
-                                Console.WriteLine($"Prescriptii pentru data {data.ToShortDateString()}:");
-                                for (int i = 0; i < prescriptiiData.Length; i++)
+                                Prescriptie[] prescriptiiData = adminPrescriptii.GetPrescriptiiDupaData(data);
+                                if (prescriptiiData != null && prescriptiiData.Length > 0)
                                 {
-                                    if (prescriptiiData[i] != null)
+                                    Console.WriteLine($"Prescriptii pentru data {data.ToShortDateString()}:");
+                                    for (int i = 0; i < prescriptiiData.Length; i++)
                                     {
-                                        AfisarePrescriptie(prescriptiiData[i], adminPacienti, adminMedici);
+                                        if (prescriptiiData[i] != null)
+                                        {
+                                            AfisarePrescriptie(prescriptiiData[i], adminPacienti, adminMedici);
+                                        }
                                     }
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Nu exista prescriptii pentru aceasta data!");
                                 }
                             }
                             else
                             {
-                                Console.WriteLine("Nu exista prescriptii pentru aceasta data!");
+                                Console.WriteLine("Format data invalid!");
                             }
                         }
                         else
                         {
-                            Console.WriteLine("Format data invalid!");
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
                         }
                         break;
+
                     case "R":
                         return;
+
                     default:
-                        Console.WriteLine("Optiune inexistenta. incercati din nou.");
+                        Console.WriteLine("Optiune inexistenta. Incercati din nou.");
                         break;
                 }
             } while (optiune.ToUpper() != "R");
@@ -474,67 +968,138 @@ namespace ClinicaAPP
         private static void GestionareDepartamente(AdministrareDepartamente_FisierText adminDepartamente, ref Departament departamentNou, ref int nrDepartamente)
         {
             string optiune;
-            Departament[] departamente = new Departament[0];
             do
             {
                 Console.WriteLine("\n--- Gestionare Departamente ---");
-                Console.WriteLine("C. Creare departament nou");
-                Console.WriteLine("A. Afisare toate departamentele");
-                Console.WriteLine("U. Actualizare informatii departament");
+
+                if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.AdaugareDepartamente))
+                    Console.WriteLine("A. Adaugare departament");
+
+                if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.ModificareDepartamente))
+                    Console.WriteLine("M. Modificare departament");
+
+                if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizareDepartamente))
+                    Console.WriteLine("V. Vizualizare departamente");
+
                 Console.WriteLine("R. Revenire la meniul principal");
+
                 Console.Write("\nAlegeti o optiune: ");
                 optiune = Console.ReadLine();
+
                 switch (optiune.ToUpper())
                 {
-                    case "C":
-                        departamente = adminDepartamente.GetDepartamente(out nrDepartamente);
-                        AdministrareDepartamente_Memorie.AfisareDepartamente(departamente, nrDepartamente);
-                        departamentNou = CitireDepartamentTastatura();
-                        int idDepartament = ++nrDepartamente;
-                        departamentNou.IdDepartament = idDepartament;
-                        adminDepartamente.AddDepartament(departamentNou);
-                        Console.WriteLine("Departament creat cu succes!");
-                        break;
                     case "A":
-                        departamente = adminDepartamente.GetDepartamente(out nrDepartamente);
-                        AdministrareDepartamente_Memorie.AfisareDepartamente(departamente, nrDepartamente);
-                        break;
-                    case "U":
-                        Console.Write("Introduceti ID-ul departamentului pentru actualizare: ");
-                        int idDepartamentUpdate = Convert.ToInt32(Console.ReadLine());
-                        Departament departamentUpdate = adminDepartamente.GetDepartamentDupaId(idDepartamentUpdate);
-                        if (departamentUpdate != null)
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.AdaugareDepartamente))
                         {
-                            Departament departamentActualizat = CitireDepartamentTastatura();
-                            departamentActualizat.IdDepartament = departamentUpdate.IdDepartament;
-                            adminDepartamente.UpdateDepartament(departamentActualizat);
-                            Console.WriteLine("Departament actualizat cu succes!");
+                            Departament[] departamente = adminDepartamente.GetDepartamente(out nrDepartamente);
+                            AdministrareDepartamente_Memorie.AfisareDepartamente(departamente, nrDepartamente);
+                            departamentNou = CitireDepartamentTastatura();
+                            int idDepartament = ++nrDepartamente;
+                            departamentNou.IdDepartament = idDepartament;
+
+                            string numeFisierDepartamente = ConfigurationManager.AppSettings["NumeFisierDepartamente"];
+                            string locatieFisierSolutie = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName;
+                            string caleCompletaFisier = Path.Combine(locatieFisierSolutie, numeFisierDepartamente);
+                            AdministrareDepartamente_Memorie adminDepartamenteMemorie = new AdministrareDepartamente_Memorie(caleCompletaFisier);
+
+                            adminDepartamenteMemorie.AddDepartament(departamentNou);
+                            Console.WriteLine("Departament adaugat in memorie.");
+                            adminDepartamente.AddDepartament(departamentNou);
+                            Console.WriteLine("Departament adaugat in fisier.");
                         }
                         else
-                        {
-                            Console.WriteLine("Nu exista departament cu acest ID!");
-                        }
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
                         break;
+
+                    case "M":
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.ModificareDepartamente))
+                        {
+                            string numeFisierDepartamente = ConfigurationManager.AppSettings["NumeFisierDepartamente"];
+                            string locatieFisierSolutie = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName;
+                            string caleCompletaFisier = Path.Combine(locatieFisierSolutie, numeFisierDepartamente);
+                            AdministrareDepartamente_Memorie adminDepartamenteMemorie = new AdministrareDepartamente_Memorie(caleCompletaFisier);
+
+                            Console.Write("Introduceti ID-ul departamentului pentru actualizare: ");
+                            int idDepartamentUpdate = Convert.ToInt32(Console.ReadLine());
+                            Departament departamentUpdate = adminDepartamenteMemorie.GetDepartamentDupaId(idDepartamentUpdate);
+                            if (departamentUpdate != null)
+                            {
+                                Console.WriteLine($"Departament gasit pentru actualizare: ID: {departamentUpdate.IdDepartament} - {departamentUpdate.Nume} - Locatie: {departamentUpdate.Locatie}");
+                                Departament departamentActualizat = CitireDepartamentTastatura();
+                                departamentActualizat.IdDepartament = departamentUpdate.IdDepartament;
+                                adminDepartamenteMemorie.UpdateDepartament(departamentActualizat);
+                                Console.WriteLine("Departament actualizat in memorie.");
+                                adminDepartamente.UpdateDepartament(departamentActualizat);
+                                Console.WriteLine("Departament actualizat in fisier.");
+                            }
+                            else
+                            {
+                                Console.WriteLine("Nu exista departament cu acest ID!");
+                            }
+                        }
+                        else
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
+                        break;
+
+                    case "V":
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizareDepartamente))
+                        {
+                            Departament[] departamente = adminDepartamente.GetDepartamente(out nrDepartamente);
+                            AdministrareDepartamente_Memorie.AfisareDepartamente(departamente, nrDepartamente);
+                        }
+                        else
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
+                        break;
+
                     case "R":
                         return;
+
                     default:
-                        Console.WriteLine("Optiune inexistenta. incercati din nou.");
+                        Console.WriteLine("Optiune invalida, incercati din nou.");
                         break;
                 }
             } while (optiune.ToUpper() != "R");
         }
 
+
         private static void GestionareMedici(AdministrareMedici_FisierText adminMedici, AdministrareDepartamente_FisierText adminDepartamente, ref Medic medicNou, ref int nrMedici)
         {
             string optiune;
+            string numeFisierMedici = ConfigurationManager.AppSettings["NumeFisierMedici"];
+
+            string locatieFisierSolutie = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName;
+            string caleCompletaFisier = Path.Combine(locatieFisierSolutie, numeFisierMedici);
+
+            adminMedici = new AdministrareMedici_FisierText(numeFisierMedici);
+
+            Medic[] mediciExistenti = adminMedici.GetMedici(out nrMedici);
+            int maxId = 0;
+
+            if (mediciExistenti != null && mediciExistenti.Length > 0)
+            {
+                for (int i = 0; i < mediciExistenti.Length; i++)
+                {
+                    if (mediciExistenti[i] != null && mediciExistenti[i].IdUser > maxId)
+                    {
+                        maxId = mediciExistenti[i].IdUser;
+                        Console.WriteLine($"Max ID: {maxId}");
+                    }
+                }
+            }
+
             do
             {
                 Console.WriteLine("\n--- Gestionare Medici ---");
-                Console.WriteLine("C. Adaugare medic nou");
-                Console.WriteLine("A. Afisare toti medicii");
-                Console.WriteLine("S. Afisare medici dupa specialitate");
-                Console.WriteLine("D. Afisare medici dupa departament");
-                Console.WriteLine("U. Actualizare informatii medic");
+                if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.AdaugareMedici))
+                    Console.WriteLine("C. Adaugare medic nou");
+                if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizareMedici))
+                {
+                    Console.WriteLine("A. Afisare toti medicii");
+                    Console.WriteLine("S. Afisare medici dupa specialitate");
+                    Console.WriteLine("D. Afisare medici dupa departament");
+                }
+                if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.ModificareMedici))
+                    Console.WriteLine("U. Actualizare informatii medic");
                 Console.WriteLine("R. Revenire la meniul principal");
 
                 Console.Write("\nAlegeti o optiune: ");
@@ -543,95 +1108,125 @@ namespace ClinicaAPP
                 switch (optiune.ToUpper())
                 {
                     case "C":
-                        int nrDepartamente;
-                        Departament[] departamente = adminDepartamente.GetDepartamente(out nrDepartamente);
-
-                        if (nrDepartamente == 0)
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.AdaugareMedici))
                         {
-                            Console.WriteLine("Nu exista departamente! Adaugati mai intai un departament.");
-                            break;
+                            int nrDepartamente;
+                            Departament[] departamente = adminDepartamente.GetDepartamente(out nrDepartamente);
+
+                            if (nrDepartamente == 0)
+                            {
+                                Console.WriteLine("Nu exista departamente! Adaugati mai intai un departament.");
+                                break;
+                            }
+
+                            Console.WriteLine("Departamente disponibile:");
+                            for (int i = 0; i < nrDepartamente; i++)
+                            {
+                                Console.WriteLine($"{departamente[i].IdDepartament}. {departamente[i].Nume}");
+                            }
+
+                            medicNou = CitireMedicTastatura();
+
+                            maxId++;
+                            medicNou.IdUser = maxId;
+
+                            adminMedici.AddMedic(medicNou);
+                            adminMedici.SalveazaMediciInFisier();
+
+                            Console.WriteLine("Medic adaugat cu succes!");
+                            nrMedici++;
                         }
-
-                        Console.WriteLine("Departamente disponibile:");
-                        for (int i = 0; i < nrDepartamente; i++)
-                        {
-                            Console.WriteLine($"{departamente[i].IdDepartament}. {departamente[i].Nume}");
-                        }
-
-                        medicNou = CitireMedicTastatura();
-
-                        int idMedic = ++nrMedici;
-                        medicNou.IdMedic = idMedic;
-                        adminMedici.AddMedic(medicNou);
-
-                        Console.WriteLine("Medic adaugat cu succes!");
+                        else
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
                         break;
                     case "A":
-                        Medic[] medici = adminMedici.GetMedici(out nrMedici);
-                        AfisareMedici(medici, nrMedici);
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizareMedici))
+                        {
+                            Medic[] medici = adminMedici.GetMedici(out nrMedici);
+                            AfisareMedici(medici, nrMedici);
+                        }
+                        else
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
                         break;
                     case "S":
-                        Console.Write("Introduceti specialitatea: ");
-                        string specialitate = Console.ReadLine();
-
-                        Medic[] mediciSpecialitate = adminMedici.GetMediciDupaSpecialitate(specialitate);
-                        if (mediciSpecialitate != null && mediciSpecialitate.Length > 0)
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizareMedici))
                         {
-                            Console.WriteLine($"Medici cu specialitatea {specialitate}:");
-                            for (int i = 0; i < mediciSpecialitate.Length; i++)
+                            Console.Write("Introduceti specialitatea: ");
+                            string specialitate = Console.ReadLine();
+
+                            Medic[] mediciSpecialitate = adminMedici.GetMediciDupaSpecialitate(specialitate);
+                            if (mediciSpecialitate != null && mediciSpecialitate.Length > 0)
                             {
-                                if (mediciSpecialitate[i] != null)
+                                Console.WriteLine($"Medici cu specialitatea {specialitate}:");
+                                for (int i = 0; i < mediciSpecialitate.Length; i++)
                                 {
-                                    AfisareMedic(mediciSpecialitate[i]);
+                                    if (mediciSpecialitate[i] != null)
+                                    {
+                                        AfisareMedic(mediciSpecialitate[i]);
+                                    }
                                 }
+                            }
+                            else
+                            {
+                                Console.WriteLine($"Nu exista medici cu specialitatea {specialitate}!");
                             }
                         }
                         else
-                        {
-                            Console.WriteLine($"Nu exista medici cu specialitatea {specialitate}!");
-                        }
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
                         break;
                     case "D":
-                        Console.Write("Introduceti ID-ul departamentului: ");
-                        int idDepartament = Convert.ToInt32(Console.ReadLine());
-
-                        Medic[] mediciDepartament = adminMedici.GetMediciDupaDepartament(idDepartament);
-                        if (mediciDepartament != null && mediciDepartament.Length > 0)
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizareMedici))
                         {
-                            Departament departament = adminDepartamente.GetDepartamentDupaId(idDepartament);
-                            string numeDepartament = departament != null ? departament.Nume : "Necunoscut";
+                            Console.Write("Introduceti ID-ul departamentului: ");
+                            int idDepartament = Convert.ToInt32(Console.ReadLine());
 
-                            Console.WriteLine($"Medici din departamentul {numeDepartament}:");
-                            for (int i = 0; i < mediciDepartament.Length; i++)
+                            Medic[] mediciDepartament = adminMedici.GetMediciDupaDepartament(idDepartament);
+                            if (mediciDepartament != null && mediciDepartament.Length > 0)
                             {
-                                if (mediciDepartament[i] != null)
+                                Departament departament = adminDepartamente.GetDepartamentDupaId(idDepartament);
+                                string numeDepartament = departament != null ? departament.Nume : "Necunoscut";
+
+                                Console.WriteLine($"Medici din departamentul {numeDepartament}:");
+                                for (int i = 0; i < mediciDepartament.Length; i++)
                                 {
-                                    AfisareMedic(mediciDepartament[i]);
+                                    if (mediciDepartament[i] != null)
+                                    {
+                                        AfisareMedic(mediciDepartament[i]);
+                                    }
                                 }
+                            }
+                            else
+                            {
+                                Console.WriteLine($"Nu exista medici in departamentul cu ID-ul {idDepartament}!");
                             }
                         }
                         else
-                        {
-                            Console.WriteLine($"Nu exista medici in departamentul cu ID-ul {idDepartament}!");
-                        }
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
                         break;
                     case "U":
-                        Console.Write("Introduceti ID-ul medicului pentru actualizare: ");
-                        int idMedicUpdate = Convert.ToInt32(Console.ReadLine());
-
-                        Medic medicUpdate = adminMedici.GetMedicDupaId(idMedicUpdate);
-                        if (medicUpdate != null)
+                        if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.ModificareMedici))
                         {
-                            Medic medicActualizat = CitireMedicTastatura();
-                            medicActualizat.IdMedic = medicUpdate.IdMedic;
+                            Console.Write("Introduceti ID-ul medicului pentru actualizare: ");
+                            int idMedicUpdate = Convert.ToInt32(Console.ReadLine());
 
-                            adminMedici.UpdateMedic(medicActualizat);
-                            Console.WriteLine("Medic actualizat cu succes!");
+                            Medic medicUpdate = adminMedici.GetMedicDupaId(idMedicUpdate);
+                            if (medicUpdate != null)
+                            {
+                                Medic medicActualizat = CitireMedicTastatura();
+                                medicActualizat.IdUser = medicUpdate.IdUser;
+
+                                adminMedici.UpdateMedic(medicActualizat);
+                                adminMedici.SalveazaMediciInFisier();
+
+                                Console.WriteLine("Medic actualizat cu succes!");
+                            }
+                            else
+                            {
+                                Console.WriteLine("Nu exista medic cu acest ID!");
+                            }
                         }
                         else
-                        {
-                            Console.WriteLine("Nu exista medic cu acest ID!");
-                        }
+                            Console.WriteLine("Nu aveti permisiuni pentru aceasta actiune!");
                         break;
                     case "R":
                         return;
@@ -640,7 +1235,11 @@ namespace ClinicaAPP
                         break;
                 }
             } while (optiune.ToUpper() != "R");
+
+            adminMedici.SalveazaMediciInFisier();
         }
+
+
         public static Pacient CitirePacientTastatura()
         {
             Console.WriteLine("\n--- Introducere date pacient ---");
@@ -702,8 +1301,8 @@ namespace ClinicaAPP
             Console.Write("Introduceti programul medicului: ");
             string program = Console.ReadLine();
 
-            return new Medic(0, nume, prenume, cnp, specialitate, idDepartament, telefon, email, program); }
-
+            return new Medic(0, nume, prenume, cnp, specialitate, idDepartament, telefon, email, program, RangUtilizator.Medic);
+        }
 
         public static Programare CitireProgramareTastatura(AdministrarePacienti_FisierText adminPacienti, AdministrareMedici_FisierText adminMedici)
         {
@@ -727,7 +1326,7 @@ namespace ClinicaAPP
             Console.WriteLine("Medici disponibili:");
             for (int i = 0; i < nrMedici; i++)
             {
-                Console.WriteLine($"{medici[i].IdMedic}. {medici[i].Nume} {medici[i].Prenume} ({medici[i].Specialitate})");
+                Console.WriteLine($"{medici[i].IdUser}. {medici[i].Nume} {medici[i].Prenume} ({medici[i].Specialitate})");
             }
 
             Console.Write("Selectati ID-ul medicului: ");
@@ -773,7 +1372,7 @@ namespace ClinicaAPP
             Console.WriteLine("Medici disponibili:");
             for (int i = 0; i < nrMedici; i++)
             {
-                Console.WriteLine($"{medici[i].IdMedic}. {medici[i].Nume} {medici[i].Prenume} ({medici[i].Specialitate})");
+                Console.WriteLine($"{medici[i].IdUser}. {medici[i].Nume} {medici[i].Prenume} ({medici[i].Specialitate})");
             }
 
             Console.Write("Selectati ID-ul medicului: ");
@@ -833,51 +1432,28 @@ namespace ClinicaAPP
             return departament;
         }
 
-        public static void AfisarePacient(Pacient pacient)
-        {
-            if (pacient == null) return;
-
-            Console.WriteLine($"\n--- Informatii pacient ID #{pacient.IdPacient} ---");
-            Console.WriteLine(pacient.Info());
-
-            string[] alergii = pacient.GetAlergii();
-            Console.WriteLine("Alergii:");
-            if (alergii != null && alergii.Length > 0)
-            {
-                foreach (string alergie in alergii)
-                {
-                    if (!string.IsNullOrEmpty(alergie.Trim()))
-                    {
-                        Console.WriteLine($"- {alergie.Trim()}");
-                    }
-                }
-            }
-            else
-            {
-                Console.WriteLine("- Nu are alergii cunoscute");
-            }
-        }
 
         public static void AfisarePacienti(Pacient[] pacienti, int nrPacienti)
         {
-            if (pacienti == null || nrPacienti == 0)
+            if (nrPacienti == 0)
             {
-                Console.WriteLine("Nu exista pacienti inregistrati!");
+                Console.WriteLine("Nu exista pacienti in sistem.");
                 return;
             }
 
-            Console.WriteLine("\n--- Lista pacientilor ---");
-            for (int i = 0; i < nrPacienti; i++)
+            Console.WriteLine("--- Lista Pacientilor ---");
+            foreach (var pacient in pacienti)
             {
-                Console.WriteLine(pacienti[i].InfoScurt());
+                Console.WriteLine($"ID: {pacient.IdPacient} - Nume: {pacient.Nume} - CNP: {pacient.CNP}");
             }
         }
+
 
         public static void AfisareMedic(Medic medic)
         {
             if (medic == null) return;
 
-            Console.WriteLine($"\n--- Informatii medic ID #{medic.IdMedic} ---");
+            Console.WriteLine($"\n--- Informatii medic ID #{medic.IdUser} ---");
             Console.WriteLine(medic.Info());
         }
 
@@ -892,14 +1468,13 @@ namespace ClinicaAPP
             Console.WriteLine("\n--- Lista medicilor ---");
             for (int i = 0; i < nrMedici; i++)
             {
-                Console.WriteLine(medici[i].InfoScurt());
+                Console.WriteLine(medici[i].Info());
             }
         }
 
         public static void AfisareProgramare(Programare programare, AdministrarePacienti_FisierText adminPacienti, AdministrareMedici_FisierText adminMedici)
         {
             if (programare == null) return;
-
             Pacient pacient = adminPacienti.GetPacientDupaId(programare.IdPacient);
             Medic medic = adminMedici.GetMedicDupaId(programare.IdMedic);
 
@@ -935,6 +1510,9 @@ namespace ClinicaAPP
             if (prescriptie == null) return;
 
             Pacient pacient = adminPacienti.GetPacientDupaId(prescriptie.IdPacient);
+
+            Console.WriteLine($"ID pacient: {prescriptie.IdPacient}");
+
             Medic medic = adminMedici.GetMedicDupaId(prescriptie.IdMedic);
 
             string numePacient = (pacient != null) ? $"{pacient.Nume} {pacient.Prenume}" : "Pacient necunoscut";
@@ -981,28 +1559,7 @@ namespace ClinicaAPP
             }
         }
 
-        public static void AfisareDepartament(Departament departament)
-        {
-            if (departament == null) return;
-
-            Console.WriteLine($"\n--- Informatii departament ID #{departament.IdDepartament} ---");
-            Console.WriteLine(departament.Info());
-        }
-
-        public static void AfisareDepartamente(Departament[] departamente, int nrDepartamente)
-        {
-            if (departamente == null || nrDepartamente == 0)
-            {
-                Console.WriteLine("Nu exista departamente inregistrate!");
-                return;
-            }
-
-            Console.WriteLine("\n--- Lista departamentelor ---");
-            for (int i = 0; i < nrDepartamente; i++)
-            {
-                Console.WriteLine(departamente[i].InfoScurt());
-            }
-        }
 
     }
 }
+

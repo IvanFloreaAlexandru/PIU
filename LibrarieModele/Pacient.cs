@@ -92,15 +92,5 @@ namespace LibrarieModele
             return $"ID: {IdPacient}, {Nume} {Prenume}, CNP: {CNP}, Tel: {Telefon}";
         }
 
-        public string Info()
-        {
-            string alergiiInfo = Alergii != null && Alergii.Length > 0 ? string.Join(", ", Alergii) : "Nicio alergie înregistrată";
-            return $"ID: {IdPacient}\nNume: {Nume} {Prenume}\nCNP: {CNP}\nData nasterii: {DataNasterii:dd.MM.yyyy}\nGen: {Gen}\nAdresa: {Adresa}\nContact: {Telefon}, {Email}\nGrupa sanguina: {GrupaSanguina}\nAlergii: {alergiiInfo}";
-        }
-        public string[] GetAlergii()
-        {
-            return Alergii;
-        }
-
     }
 }

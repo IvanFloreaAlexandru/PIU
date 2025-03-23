@@ -1,0 +1,6 @@
+2,ivan,florea,ivanflorea@yahoo.ro,abcd,Director
+3,john,doe,john.doe@example.com,1234,Medic
+4,alex,smith,alex.smith@example.com,5678,Pacient
+1,uu,uu,uu,parolaInitiala,Medic
+5,nn,nn,nn,nn,Pacient
+6,ll,ll,ll,ll,Medic

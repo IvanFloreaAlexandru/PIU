@@ -12,34 +12,40 @@ namespace NivelStocareDate
 
         public AdministrarePrescriptii_FisierText(string numeFisier)
         {
-            _numeFisier = numeFisier;
+            string locatieFisierSolutie = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName;
+            _numeFisier = Path.Combine(locatieFisierSolutie, numeFisier);
+
+
             _prescriptii = new List<Prescriptie>();
 
-            if (File.Exists(numeFisier))
+            string directoryPath = Path.GetDirectoryName(_numeFisier);
+
+            if (!string.IsNullOrEmpty(directoryPath) && !Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+
+            if (File.Exists(_numeFisier))
             {
                 IncarcaPrescriptiiDinFisier();
             }
             else
             {
-                File.Create(numeFisier).Close();
+                using (FileStream fs = File.Create(_numeFisier)) { }
             }
         }
 
-        public void AddPrescriptie(Prescriptie prescriptie)
+
+        public void AddPrescriptie(Prescriptie prescriptie,string caleFisierCompleta)
         {
             _prescriptii.Add(prescriptie);
-            SalveazaPrescriptiiInFisier();
+            SalveazaPrescriptiiInFisier(caleFisierCompleta);
         }
 
         public Prescriptie[] GetPrescriptii(out int nrPrescriptii)
         {
             nrPrescriptii = _prescriptii.Count;
             return _prescriptii.ToArray();
-        }
-
-        public Prescriptie GetPrescriptieDupaId(int idPrescriptie)
-        {
-            return _prescriptii.Find(p => p.IdPrescriptie == idPrescriptie);
         }
 
         public Prescriptie[] GetPrescriptiiDupaPacient(int idPacient)
@@ -57,19 +63,10 @@ namespace NivelStocareDate
             return _prescriptii.FindAll(p => p.DataEmitere.Date == data.Date).ToArray();
         }
 
-        public void UpdatePrescriptie(Prescriptie prescriptieActualizata)
-        {
-            var prescriptieIndex = _prescriptii.FindIndex(p => p.IdPrescriptie == prescriptieActualizata.IdPrescriptie);
-            if (prescriptieIndex >= 0)
-            {
-                _prescriptii[prescriptieIndex] = prescriptieActualizata;
-                SalveazaPrescriptiiInFisier();
-            }
-        }
 
-        private void SalveazaPrescriptiiInFisier()
+        private void SalveazaPrescriptiiInFisier(string caleFisierCompleta)
         {
-            using (StreamWriter writer = new StreamWriter(_numeFisier, false))
+            using (StreamWriter writer = new StreamWriter(caleFisierCompleta, false))
             {
                 foreach (var prescriptie in _prescriptii)
                 {
@@ -90,5 +87,6 @@ namespace NivelStocareDate
                 }
             }
         }
+
     }
 }

@@ -44,13 +44,11 @@
     <Compile Include="AdministrareDepartamente_FisierText.cs" />
     <Compile Include="AdministrareDepartamente_Memorie.cs" />
     <Compile Include="AdministrareMedici_FisierText.cs" />
-    <Compile Include="AdministrareMedici_Memorie.cs" />
     <Compile Include="AdministrarePacienti_FisierText.cs" />
-    <Compile Include="AdministrarePacienti_Memorie.cs" />
     <Compile Include="AdministrarePrescriptii_FisierText.cs" />
-    <Compile Include="AdministrarePrescriptii_Memorie.cs" />
     <Compile Include="AdministrareProgramari_FisierText.cs" />
-    <Compile Include="AdministrareProgramari_Memorie.cs" />
+    <Compile Include="AdministrareUser_FisierText.cs" />
+    <Compile Include="AdministrareUser_Memorie.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

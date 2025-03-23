@@ -65,20 +65,11 @@ namespace LibrarieModele
             return $"{IdPrescriptie},{IdPacient},{IdMedic},{DataEmitere:yyyy-MM-dd},{Diagnostic},{medicamenteString},{Indicatii},{Descriere}";
         }
 
-        public string Info()
-        {
-            string medicamenteString = string.Join(", ", Medicamente);
-            return $"ID: {IdPrescriptie}\nData emitere: {DataEmitere:dd.MM.yyyy}\nDiagnostic: {Diagnostic}\nMedicamente: {medicamenteString}\nIndicatii: {Indicatii}\nObservatii: {Observatii}";
-        }
 
         public string[] GetMedicamente()
         {
             return Medicamente;
         }
 
-        public void SetMedicamente(string[] medicamente)
-        {
-            Medicamente = medicamente;
-        }
     }
 }

@@ -38,14 +38,6 @@ namespace LibrarieModele
         {
             return $"{IdDepartament},{Nume},{Descriere},{Locatie}";
         }
-
-        public string Info()
-        {
-            return $"ID: {IdDepartament}\nNume: {Nume}\nDescriptie: {Descriere}\nLocatie: {Locatie}";
-        }
-        public string InfoScurt()
-        {
-            return $"{IdDepartament}: {Nume}";
-        }
+        
     }
 }

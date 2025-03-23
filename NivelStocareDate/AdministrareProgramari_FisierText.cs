@@ -19,23 +19,33 @@ namespace NivelStocareDate
 
         public AdministrareProgramari_FisierText(string numeFisier)
         {
-            _numeFisier = numeFisier;
+            string locatieFisierSolutie = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName;
+            _numeFisier = Path.Combine(locatieFisierSolutie, numeFisier);
+
+
             _programari = new List<Programare>();
 
-            if (File.Exists(numeFisier))
+            string directoryPath = Path.GetDirectoryName(_numeFisier);
+
+            if (!string.IsNullOrEmpty(directoryPath) && !Directory.Exists(directoryPath))
             {
-                IncarcaProgramariDinFisier();
+                Directory.CreateDirectory(directoryPath);
+            }
+
+            if (File.Exists(_numeFisier))
+            {
+                IncarcaProgramariDinFisier(_numeFisier);
             }
             else
             {
-                File.Create(numeFisier).Close();
+                using (FileStream fs = File.Create(_numeFisier)) { }
             }
         }
 
-        public void AddProgramare(Programare programare)
+        public void AddProgramare(Programare programare, string caleCompletaFisier)
         {
             _programari.Add(programare);
-            SalveazaProgramariInFisier();
+            SalveazaProgramariInFisier(caleCompletaFisier);
         }
 
         public Programare[] GetProgramari(out int nrProgramari)
@@ -64,17 +74,17 @@ namespace NivelStocareDate
             return _programari.FindAll(p => p.DataOra.Date == data.Date).ToArray();
         }
 
-        public void UpdateProgramare(Programare programareActualizata)
+        public void UpdateProgramare(Programare programareActualizata, string caleCompletaFisier)
         {
             var programareIndex = _programari.FindIndex(p => p.IdProgramare == programareActualizata.IdProgramare);
             if (programareIndex >= 0)
             {
                 _programari[programareIndex] = programareActualizata;
-                SalveazaProgramariInFisier();
+                SalveazaProgramariInFisier(caleCompletaFisier);
             }
         }
 
-        private void SalveazaProgramariInFisier()
+        private void SalveazaProgramariInFisier(string caleCompletaFisier)
         {
             using (StreamWriter writer = new StreamWriter(_numeFisier, false))
             {
@@ -85,9 +95,9 @@ namespace NivelStocareDate
             }
         }
 
-        private void IncarcaProgramariDinFisier()
+        private void IncarcaProgramariDinFisier(string caleCompletaFisier)
         {
-            using (StreamReader reader = new StreamReader(_numeFisier))
+            using (StreamReader reader = new StreamReader(caleCompletaFisier))
             {
                 string linie;
                 while ((linie = reader.ReadLine()) != null)
@@ -107,5 +117,6 @@ namespace NivelStocareDate
                 }
             }
         }
+
     }
 }

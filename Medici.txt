@@ -1,0 +1,6 @@
+1,abcd,abcd,abcd,abcd,abcd,abcd,0,abcd
+2,pp,pp,pp,pp,pp,pp,0,pp
+3,abc,abc,abc,abc,abc,abc,2,abc
+4,oo,oo,oo,oo,oo,oo,3,oo
+5,aa,aa,aa,aa,aa,aa,2,aa
+6,kk,kk,kk,kk,kk,kk,2,kk

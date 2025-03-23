@@ -37,9 +37,6 @@ namespace LibrarieModele
             return $"{IdProgramare},{IdPacient},{IdMedic},{DataOra:yyyy-MM-dd HH:mm},{Durata},{Motiv},{Status}";
         }
 
-        public string Info()
-        {
-            return $"ID Programare: {IdProgramare}\nPacient ID: {IdPacient}\nMedic ID: {IdMedic}\nData si Ora: {DataOra:dd.MM.yyyy HH:mm}\nDurata: {Durata}\nMotiv: {Motiv}\nStatus: {Status}";
-        }
+
     }
 }
