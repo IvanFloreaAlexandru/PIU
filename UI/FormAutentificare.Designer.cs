@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Windows.Forms;
-
+using System.Drawing;
 
 namespace UI
 {
@@ -21,24 +21,24 @@ namespace UI
 
             this.SuspendLayout();
 
-            this.textBoxEmailInput.Location = new System.Drawing.Point(80, 30);
+            this.textBoxEmailInput.Location = new Point(80, 30);
             this.textBoxEmailInput.Name = "textBoxEmailInput";
-            this.textBoxEmailInput.Size = new System.Drawing.Size(200, 20);
+            this.textBoxEmailInput.Size = new Size(200, 20);
 
-            this.textBoxParolaInput.Location = new System.Drawing.Point(80, 70);
+            this.textBoxParolaInput.Location = new Point(80, 70);
             this.textBoxParolaInput.Name = "textBoxParolaInput";
             this.textBoxParolaInput.PasswordChar = '*';
-            this.textBoxParolaInput.Size = new System.Drawing.Size(200, 20);
+            this.textBoxParolaInput.Size = new Size(200, 20);
 
             this.btnAutentificare.Text = "Autentificare";
-            this.btnAutentificare.Location = new System.Drawing.Point(80, 110);
+            this.btnAutentificare.Location = new Point(80, 110);
             this.btnAutentificare.Click += new EventHandler(this.btnAutentificare_Click);
 
             this.btnAnulare.Text = "Anulare";
-            this.btnAnulare.Location = new System.Drawing.Point(200, 110);
+            this.btnAnulare.Location = new Point(200, 110);
             this.btnAnulare.Click += new EventHandler(this.btnAnulare_Click);
 
-            this.ClientSize = new System.Drawing.Size(320, 160);
+            this.ClientSize = new Size(320, 160);
             this.Controls.Add(this.textBoxEmailInput);
             this.Controls.Add(this.textBoxParolaInput);
             this.Controls.Add(this.btnAutentificare);
