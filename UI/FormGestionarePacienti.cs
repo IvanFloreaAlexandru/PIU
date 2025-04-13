@@ -7,35 +7,45 @@ using NivelStocareDate;
 using System.Linq;
 using System.IO;
 using System.Text.RegularExpressions;
+using MetroFramework.Controls;
+using MetroFramework.Forms;
+using System.Collections.Generic;
 
 namespace UI
 {
-    public partial class FormGestionarePacienti : Form
+    public partial class FormGestionarePacienti : MetroForm
     {
+        private AdministrarePacienti_FisierText adminPacienti;
+        private User utilizatorCurent;
+
         private Button btnAdaugarePacient;
         private Button btnModificarePacient;
         private Button btnStergerePacient;
         private Button btnVizualizarePacienti;
         private Button btnInapoi;
+        private TextBox txtNume;
+        private TextBox txtPrenume;
+        private TextBox txtTelefon;
+        private TextBox txtEmail;
+        private TextBox txtCNP;
+        private TextBox txtAdresa;
+        private TextBox txtAlergii;
+        private DateTimePicker dtpDataNasterii;
+        private ComboBox cmbGrupaSanguina;
+        private ComboBox cmbGen;
 
-        private AdministrarePacienti_FisierText adminPacienti;
-        private User utilizatorCurent;
-
-        public FormGestionarePacienti(User utilizator, Size size)
+        public FormGestionarePacienti(
+            AdministrarePacienti_FisierText pacientiAdmin,
+            User utilizatorCurent)
         {
-            InitializeComponent();
-            utilizatorCurent = utilizator;
-            adminPacienti = new AdministrarePacienti_FisierText("Pacienti.txt");
+            this.utilizatorCurent = utilizatorCurent;
+            adminPacienti = pacientiAdmin;
 
-            this.Size = size;
-            this.MinimumSize = new Size(1080, 400); 
-            this.StartPosition = FormStartPosition.CenterScreen;
-
-            btnAdaugarePacient = new Button { Text = "Adaugare pacient" };
-            btnModificarePacient = new Button { Text = "Modificare pacient" };
-            btnStergerePacient = new Button { Text = "Stergere pacient" };
-            btnVizualizarePacienti = new Button { Text = "Vizualizare pacienti" };
-            btnInapoi = new Button { Text = "Inapoi" };
+            btnAdaugarePacient = new MetroButton { Text = "Adaugare pacient" };
+            btnModificarePacient = new MetroButton { Text = "Modificare pacient" };
+            btnStergerePacient = new MetroButton { Text = "Stergere pacient" };
+            btnVizualizarePacienti = new MetroButton { Text = "Vizualizare pacienti" };
+            btnInapoi = new MetroButton { Text = "Inapoi" };
 
             btnAdaugarePacient.Size = new Size(200, 40);
             btnModificarePacient.Size = new Size(200, 40);
@@ -62,31 +72,299 @@ namespace UI
             btnStergerePacient.Click += BtnStergerePacient_Click;
             btnVizualizarePacienti.Click += BtnVizualizarePacienti_Click;
             btnInapoi.Click += BtnInapoi_Click;
+            this.Style = MetroFramework.MetroColorStyle.Black;
+            this.Size = new Size(800, 400);
         }
 
-        private void BtnAdaugarePacient_Click(object sender, EventArgs e)
+
+        private static class ConstanteValidare
         {
-            string locatieFisierSolutie = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName;
-            string numeFisierPacienti = "Pacienti.txt";
-            string caleCompletaFisierPacienti = Path.Combine(locatieFisierSolutie, numeFisierPacienti);
+            public const int CNP_LENGTH = 13;
+            public const int ADRESA_MIN_LENGTH = 5;
+            public const int VARSTA_MAXIMA = 120;
+            public const string PATTERN_NUME = @"^[a-zA-Z\s-]+$";
+            public const string PATTERN_CNP = @"^\d+$";
+            public const string PATTERN_EMAIL = @"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$";
+            public const string PATTERN_TELEFON = @"^(07\d{8}|02\d{8}|03\d{8})$";
+        }
 
-            using (Form formAdaugarePacient = new Form())
+        private static class MesajeEroare
+        {
+            public const string NUME_OBLIGATORIU = "Numele este obligatoriu!";
+            public const string NUME_FORMAT = "Numele poate contine doar litere, spatii si cratime!";
+            public const string PRENUME_OBLIGATORIU = "Prenumele este obligatoriu!";
+            public const string PRENUME_FORMAT = "Prenumele poate contine doar litere, spatii si cratime!";
+            public const string CNP_OBLIGATORIU = "CNP-ul este obligatoriu!";
+            public const string CNP_FORMAT = "CNP-ul trebuie sa contina exact 13 cifre!";
+            public const string CNP_EXISTENT = "Exista deja un pacient inregistrat cu acest CNP!";
+            public const string DATA_VIITOR = "Data nasterii nu poate fi in viitor!";
+            public const string DATA_INVALID = "Data nasterii nu este valida (varsta prea mare)!";
+            public const string GEN_OBLIGATORIU = "Selectarea genului este obligatorie!";
+            public const string ADRESA_OBLIGATORIE = "Adresa este obligatorie!";
+            public const string ADRESA_LUNGIME = "Adresa trebuie sa contina minim 5 caractere!";
+            public const string TELEFON_OBLIGATORIU = "Numarul de telefon este obligatoriu!";
+            public const string TELEFON_FORMAT = "Formatul numarului de telefon este invalid (ex: 07xxxxxxxx, 02xxxxxxxx)!";
+            public const string EMAIL_FORMAT = "Formatul adresei de email este invalid!";
+            public const string TELEFON_EXISTENT = "Deja exista un pacient cu acest numar de telefon.";
+        }
+
+        private class ValidatorPacient
+        {
+            private readonly MetroLabel lblMesajEroare;
+            private readonly Dictionary<Control, MetroLabel> controlsLabelsMap;
+
+            public ValidatorPacient(MetroLabel lblMesajEroare, Dictionary<Control, MetroLabel> controlsLabelsMap)
             {
-                formAdaugarePacient.Text = "Adaugare Pacient Nou";
-                formAdaugarePacient.Size = new Size(500, 600);
-                formAdaugarePacient.StartPosition = FormStartPosition.CenterScreen;
-                formAdaugarePacient.FormBorderStyle = FormBorderStyle.FixedDialog;
-                formAdaugarePacient.MaximizeBox = false;
-                formAdaugarePacient.MinimizeBox = false;
+                this.lblMesajEroare = lblMesajEroare;
+                this.controlsLabelsMap = controlsLabelsMap;
+            }
 
-                Panel panelFormular = new Panel
+            private void MarcareCampInvalid(Control control, string mesaj)
+            {
+                if (controlsLabelsMap.ContainsKey(control))
+                {
+                    controlsLabelsMap[control].ForeColor = Color.Red;
+                }
+
+                if (control is TextBox textBox)
+                {
+                    textBox.BackColor = Color.LightPink;
+                }
+
+                lblMesajEroare.Text = mesaj;
+                lblMesajEroare.Visible = true;
+            }
+
+            public void ResetValidare()
+            {
+                foreach (var pair in controlsLabelsMap)
+                {
+                    pair.Value.ForeColor = SystemColors.ControlText;
+                    if (pair.Key is TextBox textBox)
+                    {
+                        textBox.BackColor = SystemColors.Window;
+                    }
+                }
+                lblMesajEroare.Visible = false;
+            }
+
+            public bool ValidareNume(TextBox txtNume)
+            {
+                if (string.IsNullOrWhiteSpace(txtNume.Text))
+                {
+                    MarcareCampInvalid(txtNume, MesajeEroare.NUME_OBLIGATORIU);
+                    return false;
+                }
+                if (!Regex.IsMatch(txtNume.Text, ConstanteValidare.PATTERN_NUME))
+                {
+                    MarcareCampInvalid(txtNume, MesajeEroare.NUME_FORMAT);
+                    return false;
+                }
+                return true;
+            }
+
+            public bool ValidarePrenume(TextBox txtPrenume)
+            {
+                if (string.IsNullOrWhiteSpace(txtPrenume.Text))
+                {
+                    MarcareCampInvalid(txtPrenume, MesajeEroare.PRENUME_OBLIGATORIU);
+                    return false;
+                }
+                if (!Regex.IsMatch(txtPrenume.Text, ConstanteValidare.PATTERN_NUME))
+                {
+                    MarcareCampInvalid(txtPrenume, MesajeEroare.PRENUME_FORMAT);
+                    return false;
+                }
+                return true;
+            }
+
+            public bool ValidareCNP(TextBox txtCNP, AdministrarePacienti_FisierText adminPacienti)
+            {
+                if (string.IsNullOrWhiteSpace(txtCNP.Text))
+                {
+                    MarcareCampInvalid(txtCNP, MesajeEroare.CNP_OBLIGATORIU);
+                    return false;
+                }
+                if (txtCNP.Text.Length != ConstanteValidare.CNP_LENGTH || !Regex.IsMatch(txtCNP.Text, ConstanteValidare.PATTERN_CNP))
+                {
+                    MarcareCampInvalid(txtCNP, MesajeEroare.CNP_FORMAT);
+                    return false;
+                }
+
+                Pacient[] pacientiExistenti = adminPacienti.GetPacienti(out int nrPacientiExistenti);
+                foreach (var pacient in pacientiExistenti)
+                {
+                    if (pacient.CNP == txtCNP.Text)
+                    {
+                        MarcareCampInvalid(txtCNP, MesajeEroare.CNP_EXISTENT);
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            public bool ValidareDataNasterii(DateTimePicker dtpDataNasterii)
+            {
+                if (dtpDataNasterii.Value > DateTime.Now)
+                {
+                    controlsLabelsMap[dtpDataNasterii].ForeColor = Color.Red;
+                    lblMesajEroare.Text = MesajeEroare.DATA_VIITOR;
+                    lblMesajEroare.Visible = true;
+                    return false;
+                }
+                if (DateTime.Now.Year - dtpDataNasterii.Value.Year > ConstanteValidare.VARSTA_MAXIMA)
+                {
+                    controlsLabelsMap[dtpDataNasterii].ForeColor = Color.Red;
+                    lblMesajEroare.Text = MesajeEroare.DATA_INVALID;
+                    lblMesajEroare.Visible = true;
+                    return false;
+                }
+                return true;
+            }
+
+            public bool ValidareGen(ComboBox cmbGen)
+            {
+                if (cmbGen.SelectedIndex == -1)
+                {
+                    controlsLabelsMap[cmbGen].ForeColor = Color.Red;
+                    lblMesajEroare.Text = MesajeEroare.GEN_OBLIGATORIU;
+                    lblMesajEroare.Visible = true;
+                    return false;
+                }
+                return true;
+            }
+
+            public bool ValidareAdresa(TextBox txtAdresa)
+            {
+                if (string.IsNullOrWhiteSpace(txtAdresa.Text))
+                {
+                    MarcareCampInvalid(txtAdresa, MesajeEroare.ADRESA_OBLIGATORIE);
+                    return false;
+                }
+                if (txtAdresa.Text.Length < ConstanteValidare.ADRESA_MIN_LENGTH)
+                {
+                    MarcareCampInvalid(txtAdresa, MesajeEroare.ADRESA_LUNGIME);
+                    return false;
+                }
+                return true;
+            }
+
+            public bool ValidareTelefon(TextBox txtTelefon, AdministrarePacienti_FisierText adminPacienti)
+            {
+                if (string.IsNullOrWhiteSpace(txtTelefon.Text))
+                {
+                    MarcareCampInvalid(txtTelefon, MesajeEroare.TELEFON_OBLIGATORIU);
+                    return false;
+                }
+                if (!Regex.IsMatch(txtTelefon.Text, ConstanteValidare.PATTERN_TELEFON))
+                {
+                    MarcareCampInvalid(txtTelefon, MesajeEroare.TELEFON_FORMAT);
+                    return false;
+                }
+
+                Pacient[] pacientiExistenti = adminPacienti.GetPacienti(out int nrPacientiExistenti);
+                foreach (var pacient in pacientiExistenti)
+                {
+                    if (pacient.Telefon == txtTelefon.Text)
+                    {
+                        MarcareCampInvalid(txtTelefon, MesajeEroare.TELEFON_EXISTENT);
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+
+            public bool ValidareEmail(TextBox txtEmail)
+            {
+                if (!string.IsNullOrWhiteSpace(txtEmail.Text) && !Regex.IsMatch(txtEmail.Text, ConstanteValidare.PATTERN_EMAIL))
+                {
+                    MarcareCampInvalid(txtEmail, MesajeEroare.EMAIL_FORMAT);
+                    return false;
+                }
+                return true;
+            }
+
+            public bool ValideazaPacient(
+                TextBox txtNume,
+                TextBox txtPrenume,
+                TextBox txtCNP,
+                DateTimePicker dtpDataNasterii,
+                ComboBox cmbGen,
+                TextBox txtAdresa,
+                TextBox txtTelefon,
+                TextBox txtEmail,
+                AdministrarePacienti_FisierText adminPacienti)
+            {
+                ResetValidare();
+
+                bool valid = true;
+
+                if (!ValidareNume(txtNume))
+                    valid = false;
+
+                if (!ValidarePrenume(txtPrenume))
+                    valid = false;
+
+                if (!ValidareCNP(txtCNP, adminPacienti))
+                    valid = false;
+
+                if (!ValidareDataNasterii(dtpDataNasterii))
+                    valid = false;
+
+                if (!ValidareGen(cmbGen))
+                    valid = false;
+
+                if (!ValidareAdresa(txtAdresa))
+                    valid = false;
+
+                if (!ValidareTelefon(txtTelefon, adminPacienti))
+                    valid = false;
+
+                if (!ValidareEmail(txtEmail))
+                    valid = false;
+
+                return valid;
+            }
+        }
+
+        private class InitializatorFormularPacient
+        {
+            private readonly MetroForm formular;
+            private readonly Dictionary<Control, MetroLabel> controlsLabelsMap;
+            private MetroLabel lblMesajEroare;
+            private ValidatorPacient validator;
+
+            public InitializatorFormularPacient(MetroForm formular)
+            {
+                this.formular = formular;
+                this.controlsLabelsMap = new Dictionary<Control, MetroLabel>();
+            }
+
+            public TextBox TxtNume { get; private set; }
+            public TextBox TxtPrenume { get; private set; }
+            public TextBox TxtCNP { get; private set; }
+            public DateTimePicker DtpDataNasterii { get; private set; }
+            public ComboBox CmbGen { get; private set; }
+            public TextBox TxtAdresa { get; private set; }
+            public TextBox TxtTelefon { get; private set; }
+            public TextBox TxtEmail { get; private set; }
+            public ComboBox CmbGrupaSanguina { get; private set; }
+            public TextBox TxtAlergii { get; private set; }
+            public Button BtnSalveazaPacient { get; private set; }
+            public MetroPanel PanelFormular { get; private set; }
+            public ValidatorPacient Validator => validator;
+
+            public void InitializeazaFormular()
+            {
+                PanelFormular = new MetroPanel
                 {
                     Dock = DockStyle.Fill,
                     AutoScroll = true,
                     Name = "panelFormular"
                 };
 
-                Label lblTitluFormular = new Label
+                MetroLabel lblTitluFormular = new MetroLabel
                 {
                     Text = "Adaugare Pacient Nou",
                     Location = new Point(10, 10),
@@ -94,181 +372,11 @@ namespace UI
                     Font = new Font(SystemFonts.DefaultFont.FontFamily, 10, FontStyle.Bold),
                     Name = "lblTitluFormular"
                 };
+                PanelFormular.Controls.Add(lblTitluFormular);
 
-                Label lblNume = new Label
-                {
-                    Text = "Nume *:",
-                    Location = new Point(10, 50),
-                    Width = 150,
-                    Name = "lblNume"
-                };
+                AadaugaCampuriFormular();
 
-                Label lblPrenume = new Label
-                {
-                    Text = "Prenume *:",
-                    Location = new Point(10, 80),
-                    Width = 150,
-                    Name = "lblPrenume"
-                };
-
-                Label lblCNP = new Label
-                {
-                    Text = "CNP *:",
-                    Location = new Point(10, 110),
-                    Width = 150,
-                    Name = "lblCNP"
-                };
-
-                Label lblDataNasterii = new Label
-                {
-                    Text = "Data nasterii *:",
-                    Location = new Point(10, 140),
-                    Width = 150,
-                    Name = "lblDataNasterii"
-                };
-
-                Label lblGen = new Label
-                {
-                    Text = "Gen *:",
-                    Location = new Point(10, 170),
-                    Width = 150,
-                    Name = "lblGen"
-                };
-
-                Label lblAdresa = new Label
-                {
-                    Text = "Adresa *:",
-                    Location = new Point(10, 200),
-                    Width = 150,
-                    Name = "lblAdresa"
-                };
-
-                Label lblTelefon = new Label
-                {
-                    Text = "Telefon *:",
-                    Location = new Point(10, 270),
-                    Width = 150,
-                    Name = "lblTelefon"
-                };
-
-                Label lblEmail = new Label
-                {
-                    Text = "Email:",
-                    Location = new Point(10, 300),
-                    Width = 150,
-                    Name = "lblEmail"
-                };
-
-                Label lblGrupaSanguina = new Label
-                {
-                    Text = "Grupa sanguina:",
-                    Location = new Point(10, 330),
-                    Width = 150,
-                    Name = "lblGrupaSanguina"
-                };
-
-                Label lblAlergii = new Label
-                {
-                    Text = "Alergii:",
-                    Location = new Point(10, 360),
-                    Width = 150,
-                    Name = "lblAlergii"
-                };
-
-                Label[] eticheteCampuri = new Label[]
-                {
-            lblNume,
-            lblPrenume,
-            lblCNP,
-            lblDataNasterii,
-            lblGen,
-            lblAdresa,
-            lblTelefon,
-            lblEmail,
-            lblGrupaSanguina,
-            lblAlergii
-                };
-
-                TextBox txtNume = new TextBox
-                {
-                    Location = new Point(170, 50),
-                    Width = 300,
-                    Name = "txtNume"
-                };
-
-                TextBox txtPrenume = new TextBox
-                {
-                    Location = new Point(170, 80),
-                    Width = 300,
-                    Name = "txtPrenume"
-                };
-
-                TextBox txtCNP = new TextBox
-                {
-                    Location = new Point(170, 110),
-                    Width = 300,
-                    Name = "txtCNP",
-                    MaxLength = 13
-                };
-
-                DateTimePicker dtpDataNasterii = new DateTimePicker
-                {
-                    Format = DateTimePickerFormat.Short,
-                    Location = new Point(170, 140),
-                    Width = 300,
-                    Name = "dtpDataNasterii"
-                };
-
-                ComboBox cmbGen = new ComboBox
-                {
-                    Location = new Point(170, 170),
-                    Width = 300,
-                    DropDownStyle = ComboBoxStyle.DropDownList,
-                    Name = "cmbGen"
-                };
-                cmbGen.Items.AddRange(new object[] { "M", "F" });
-
-                TextBox txtAdresa = new TextBox
-                {
-                    Location = new Point(170, 200),
-                    Width = 300,
-                    Height = 60,
-                    Multiline = true,
-                    Name = "txtAdresa"
-                };
-
-                TextBox txtTelefon = new TextBox
-                {
-                    Location = new Point(170, 270),
-                    Width = 300,
-                    Name = "txtTelefon"
-                };
-
-                TextBox txtEmail = new TextBox
-                {
-                    Location = new Point(170, 300),
-                    Width = 300,
-                    Name = "txtEmail"
-                };
-
-                ComboBox cmbGrupaSanguina = new ComboBox
-                {
-                    Location = new Point(170, 330),
-                    Width = 300,
-                    Name = "cmbGrupaSanguina"
-                };
-                cmbGrupaSanguina.Items.AddRange(new object[] { "0+", "0-", "A+", "A-", "B+", "B-", "AB+", "AB-" });
-
-                TextBox txtAlergii = new TextBox
-                {
-                    Location = new Point(170, 360),
-                    Width = 300,
-                    Height = 60,
-                    Multiline = true,
-                    Name = "txtAlergii"
-                };
-
-                Label lblMesajEroare = new Label
+                lblMesajEroare = new MetroLabel
                 {
                     Location = new Point(10, 430),
                     Width = 460,
@@ -277,203 +385,9 @@ namespace UI
                     Visible = false,
                     Name = "lblMesajEroare"
                 };
+                PanelFormular.Controls.Add(lblMesajEroare);
 
-                txtNume.Leave += (s, ev) =>
-                {
-                    if (string.IsNullOrWhiteSpace(txtNume.Text))
-                    {
-                        lblNume.ForeColor = Color.Red;
-                        txtNume.BackColor = Color.LightPink;
-                        lblMesajEroare.Text = "Numele este obligatoriu!";
-                        lblMesajEroare.Visible = true;
-                    }
-                    else if (!Regex.IsMatch(txtNume.Text, @"^[a-zA-Z\s-]+$"))
-                    {
-                        lblNume.ForeColor = Color.Red;
-                        txtNume.BackColor = Color.LightPink;
-                        lblMesajEroare.Text = "Numele poate contine doar litere, spatii si cratime!";
-                        lblMesajEroare.Visible = true;
-                    }
-                    else
-                    {
-                        lblNume.ForeColor = SystemColors.ControlText;
-                        txtNume.BackColor = SystemColors.Window;
-                        lblMesajEroare.Visible = false;
-                    }
-                };
-
-                txtPrenume.Leave += (s, ev) =>
-                {
-                    if (string.IsNullOrWhiteSpace(txtPrenume.Text))
-                    {
-                        lblPrenume.ForeColor = Color.Red;
-                        txtPrenume.BackColor = Color.LightPink;
-                        lblMesajEroare.Text = "Prenumele este obligatoriu!";
-                        lblMesajEroare.Visible = true;
-                    }
-                    else if (!Regex.IsMatch(txtPrenume.Text, @"^[a-zA-Z\s-]+$"))
-                    {
-                        lblPrenume.ForeColor = Color.Red;
-                        txtPrenume.BackColor = Color.LightPink;
-                        lblMesajEroare.Text = "Prenumele poate contine doar litere, spatii si cratime!";
-                        lblMesajEroare.Visible = true;
-                    }
-                    else
-                    {
-                        lblPrenume.ForeColor = SystemColors.ControlText;
-                        txtPrenume.BackColor = SystemColors.Window;
-                        lblMesajEroare.Visible = false;
-                    }
-                };
-
-                txtCNP.Leave += (s, ev) =>
-                {
-                    if (string.IsNullOrWhiteSpace(txtCNP.Text))
-                    {
-                        lblCNP.ForeColor = Color.Red;
-                        txtCNP.BackColor = Color.LightPink;
-                        lblMesajEroare.Text = "CNP-ul este obligatoriu!";
-                        lblMesajEroare.Visible = true;
-                    }
-                    else if (txtCNP.Text.Length != 13 || !Regex.IsMatch(txtCNP.Text, @"^\d+$"))
-                    {
-                        lblCNP.ForeColor = Color.Red;
-                        txtCNP.BackColor = Color.LightPink;
-                        lblMesajEroare.Text = "CNP-ul trebuie sa contina exact 13 cifre!";
-                        lblMesajEroare.Visible = true;
-                    }
-                    else
-                    {
-                        Pacient[] pacientiExistenti = adminPacienti.GetPacienti(out int nrPacientiExistenti);
-                        bool cnpExistent = false;
-                        foreach (var pacient in pacientiExistenti)
-                        {
-                            if (pacient.CNP == txtCNP.Text)
-                            {
-                                cnpExistent = true;
-                                break;
-                            }
-                        }
-
-                        if (cnpExistent)
-                        {
-                            lblCNP.ForeColor = Color.Red;
-                            txtCNP.BackColor = Color.LightPink;
-                            lblMesajEroare.Text = "Exista deja un pacient inregistrat cu acest CNP!";
-                            lblMesajEroare.Visible = true;
-                        }
-                        else
-                        {
-                            lblCNP.ForeColor = SystemColors.ControlText;
-                            txtCNP.BackColor = SystemColors.Window;
-                            lblMesajEroare.Visible = false;
-                        }
-                    }
-                };
-
-                dtpDataNasterii.ValueChanged += (s, ev) =>
-                {
-                    if (dtpDataNasterii.Value > DateTime.Now)
-                    {
-                        lblDataNasterii.ForeColor = Color.Red;
-                        lblMesajEroare.Text = "Data nasterii nu poate fi in viitor!";
-                        lblMesajEroare.Visible = true;
-                    }
-                    else if (DateTime.Now.Year - dtpDataNasterii.Value.Year > 120)
-                    {
-                        lblDataNasterii.ForeColor = Color.Red;
-                        lblMesajEroare.Text = "Data nasterii nu este valida (varsta prea mare)!";
-                        lblMesajEroare.Visible = true;
-                    }
-                    else
-                    {
-                        lblDataNasterii.ForeColor = SystemColors.ControlText;
-                        lblMesajEroare.Visible = false;
-                    }
-                };
-
-                cmbGen.SelectedIndexChanged += (s, ev) =>
-                {
-                    if (cmbGen.SelectedIndex == -1)
-                    {
-                        lblGen.ForeColor = Color.Red;
-                        lblMesajEroare.Text = "Selectarea genului este obligatorie!";
-                        lblMesajEroare.Visible = true;
-                    }
-                    else
-                    {
-                        lblGen.ForeColor = SystemColors.ControlText;
-                        lblMesajEroare.Visible = false;
-                    }
-                };
-
-                txtAdresa.Leave += (s, ev) =>
-                {
-                    if (string.IsNullOrWhiteSpace(txtAdresa.Text))
-                    {
-                        lblAdresa.ForeColor = Color.Red;
-                        txtAdresa.BackColor = Color.LightPink;
-                        lblMesajEroare.Text = "Adresa este obligatorie!";
-                        lblMesajEroare.Visible = true;
-                    }
-                    else if (txtAdresa.Text.Length < 5)
-                    {
-                        lblAdresa.ForeColor = Color.Red;
-                        txtAdresa.BackColor = Color.LightPink;
-                        lblMesajEroare.Text = "Adresa trebuie sa contina minim 5 caractere!";
-                        lblMesajEroare.Visible = true;
-                    }
-                    else
-                    {
-                        lblAdresa.ForeColor = SystemColors.ControlText;
-                        txtAdresa.BackColor = SystemColors.Window;
-                        lblMesajEroare.Visible = false;
-                    }
-                };
-
-                txtTelefon.Leave += (s, ev) =>
-                {
-                    if (string.IsNullOrWhiteSpace(txtTelefon.Text))
-                    {
-                        lblTelefon.ForeColor = Color.Red;
-                        txtTelefon.BackColor = Color.LightPink;
-                        lblMesajEroare.Text = "Numarul de telefon este obligatoriu!";
-                        lblMesajEroare.Visible = true;
-                    }
-                    else if (!Regex.IsMatch(txtTelefon.Text, @"^(07\d{8}|02\d{8}|03\d{8})$"))
-                    {
-                        lblTelefon.ForeColor = Color.Red;
-                        txtTelefon.BackColor = Color.LightPink;
-                        lblMesajEroare.Text = "Formatul numarului de telefon este invalid (ex: 07xxxxxxxx, 02xxxxxxxx)!";
-                        lblMesajEroare.Visible = true;
-                    }
-                    else
-                    {
-                        lblTelefon.ForeColor = SystemColors.ControlText;
-                        txtTelefon.BackColor = SystemColors.Window;
-                        lblMesajEroare.Visible = false;
-                    }
-                };
-
-                txtEmail.Leave += (s, ev) =>
-                {
-                    if (!string.IsNullOrWhiteSpace(txtEmail.Text) &&
-                        !Regex.IsMatch(txtEmail.Text, @"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$"))
-                    {
-                        lblEmail.ForeColor = Color.Red;
-                        txtEmail.BackColor = Color.LightPink;
-                        lblMesajEroare.Text = "Formatul adresei de email este invalid!";
-                        lblMesajEroare.Visible = true;
-                    }
-                    else
-                    {
-                        lblEmail.ForeColor = SystemColors.ControlText;
-                        txtEmail.BackColor = SystemColors.Window;
-                        lblMesajEroare.Visible = false;
-                    }
-                };
-
-                Button btnSalveazaPacient = new Button
+                BtnSalveazaPacient = new Button
                 {
                     Text = "Salveaza Pacient",
                     Location = new Point(10, 480),
@@ -481,219 +395,416 @@ namespace UI
                     Height = 40,
                     Name = "btnSalveazaPacient"
                 };
+                PanelFormular.Controls.Add(BtnSalveazaPacient);
 
-                btnSalveazaPacient.Click += (s, ev) =>
+                validator = new ValidatorPacient(lblMesajEroare, controlsLabelsMap);
+
+                formular.Controls.Add(PanelFormular);
+            }
+
+            private void AadaugaCampuriFormular()
+            {
+                MetroLabel lblNume = CreeazaEticheta("Nume *:", 10, 50, 150, "lblNume");
+                MetroLabel lblPrenume = CreeazaEticheta("Prenume *:", 10, 80, 150, "lblPrenume");
+                MetroLabel lblCNP = CreeazaEticheta("CNP *:", 10, 110, 150, "lblCNP");
+                MetroLabel lblDataNasterii = CreeazaEticheta("Data nasterii *:", 10, 140, 150, "lblDataNasterii");
+                MetroLabel lblGen = CreeazaEticheta("Gen *:", 10, 170, 150, "lblGen");
+                MetroLabel lblAdresa = CreeazaEticheta("Adresa *:", 10, 200, 150, "lblAdresa");
+                MetroLabel lblTelefon = CreeazaEticheta("Telefon *:", 10, 270, 150, "lblTelefon");
+                MetroLabel lblEmail = CreeazaEticheta("Email:", 10, 300, 150, "lblEmail");
+                MetroLabel lblGrupaSanguina = CreeazaEticheta("Grupa sanguina:", 10, 330, 150, "lblGrupaSanguina");
+                MetroLabel lblAlergii = CreeazaEticheta("Alergii:", 10, 360, 150, "lblAlergii");
+
+                TxtNume = CreeazaTextBox(170, 50, 300, "txtNume");
+                TxtPrenume = CreeazaTextBox(170, 80, 300, "txtPrenume");
+                TxtCNP = CreeazaTextBox(170, 110, 300, "txtCNP", ConstanteValidare.CNP_LENGTH);
+                DtpDataNasterii = new DateTimePicker
                 {
-                    foreach (Label lbl in eticheteCampuri)
-                    {
-                        lbl.ForeColor = SystemColors.ControlText;
-                    }
-                    txtNume.BackColor = SystemColors.Window;
-                    txtPrenume.BackColor = SystemColors.Window;
-                    txtCNP.BackColor = SystemColors.Window;
-                    txtAdresa.BackColor = SystemColors.Window;
-                    txtTelefon.BackColor = SystemColors.Window;
-                    txtEmail.BackColor = SystemColors.Window;
-                    txtAlergii.BackColor = SystemColors.Window;
-                    lblMesajEroare.Visible = false;
+                    Format = DateTimePickerFormat.Short,
+                    Location = new Point(170, 140),
+                    Width = 300,
+                    Name = "dtpDataNasterii"
+                };
+                CmbGen = new ComboBox
+                {
+                    Location = new Point(170, 170),
+                    Width = 300,
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    Name = "cmbGen"
+                };
+                CmbGen.Items.AddRange(new object[] { "M", "F" });
+                TxtAdresa = CreeazaTextBox(170, 200, 300, "txtAdresa", multiline: true, height: 60);
+                TxtTelefon = CreeazaTextBox(170, 270, 300, "txtTelefon");
+                TxtEmail = CreeazaTextBox(170, 300, 300, "txtEmail");
+                CmbGrupaSanguina = new ComboBox
+                {
+                    Location = new Point(170, 330),
+                    Width = 300,
+                    Name = "cmbGrupaSanguina"
+                };
+                CmbGrupaSanguina.Items.AddRange(new object[] { "0+", "0-", "A+", "A-", "B+", "B-", "AB+", "AB-" });
+                TxtAlergii = CreeazaTextBox(170, 360, 300, "txtAlergii", multiline: true, height: 60);
 
-                    bool valid = true;
-                    string mesajEroare = "";
+                controlsLabelsMap.Add(TxtNume, lblNume);
+                controlsLabelsMap.Add(TxtPrenume, lblPrenume);
+                controlsLabelsMap.Add(TxtCNP, lblCNP);
+                controlsLabelsMap.Add(DtpDataNasterii, lblDataNasterii);
+                controlsLabelsMap.Add(CmbGen, lblGen);
+                controlsLabelsMap.Add(TxtAdresa, lblAdresa);
+                controlsLabelsMap.Add(TxtTelefon, lblTelefon);
+                controlsLabelsMap.Add(TxtEmail, lblEmail);
+                controlsLabelsMap.Add(CmbGrupaSanguina, lblGrupaSanguina);
+                controlsLabelsMap.Add(TxtAlergii, lblAlergii);
 
-                    if (string.IsNullOrWhiteSpace(txtNume.Text))
-                    {
-                        lblNume.ForeColor = Color.Red;
-                        txtNume.BackColor = Color.LightPink;
-                        valid = false;
-                        mesajEroare = "Numele este obligatoriu!";
-                    }
-                    else if (!Regex.IsMatch(txtNume.Text, @"^[a-zA-Z\s-]+$"))
-                    {
-                        lblNume.ForeColor = Color.Red;
-                        txtNume.BackColor = Color.LightPink;
-                        valid = false;
-                        mesajEroare = "Numele poate contine doar litere, spatii si cratime!";
-                    }
+                PanelFormular.Controls.Add(TxtNume);
+                PanelFormular.Controls.Add(TxtPrenume);
+                PanelFormular.Controls.Add(TxtCNP);
+                PanelFormular.Controls.Add(DtpDataNasterii);
+                PanelFormular.Controls.Add(CmbGen);
+                PanelFormular.Controls.Add(TxtAdresa);
+                PanelFormular.Controls.Add(TxtTelefon);
+                PanelFormular.Controls.Add(TxtEmail);
+                PanelFormular.Controls.Add(CmbGrupaSanguina);
+                PanelFormular.Controls.Add(TxtAlergii);
+            }
 
-                    if (string.IsNullOrWhiteSpace(txtPrenume.Text))
-                    {
-                        lblPrenume.ForeColor = Color.Red;
-                        txtPrenume.BackColor = Color.LightPink;
-                        valid = false;
-                        mesajEroare = "Prenumele este obligatoriu!";
-                    }
-                    else if (!Regex.IsMatch(txtPrenume.Text, @"^[a-zA-Z\s-]+$"))
-                    {
-                        lblPrenume.ForeColor = Color.Red;
-                        txtPrenume.BackColor = Color.LightPink;
-                        valid = false;
-                        mesajEroare = "Prenumele poate contine doar litere, spatii si cratime!";
-                    }
+            private MetroLabel CreeazaEticheta(string text, int x, int y, int width, string name)
+            {
+                MetroLabel label = new MetroLabel
+                {
+                    Text = text,
+                    Location = new Point(x, y),
+                    Width = width,
+                    Name = name
+                };
+                PanelFormular.Controls.Add(label);
+                return label;
+            }
 
-                    if (string.IsNullOrWhiteSpace(txtCNP.Text))
-                    {
-                        lblCNP.ForeColor = Color.Red;
-                        txtCNP.BackColor = Color.LightPink;
-                        valid = false;
-                        mesajEroare = "CNP-ul este obligatoriu!";
-                    }
-                    else if (txtCNP.Text.Length != 13 || !Regex.IsMatch(txtCNP.Text, @"^\d+$"))
-                    {
-                        lblCNP.ForeColor = Color.Red;
-                        txtCNP.BackColor = Color.LightPink;
-                        valid = false;
-                        mesajEroare = "CNP-ul trebuie sa contina exact 13 cifre!";
-                    }
-                    else
-                    {
-                        Pacient[] pacientiExistenti = adminPacienti.GetPacienti(out int nrPacientiExistenti);
-                        foreach (var pacient in pacientiExistenti)
-                        {
-                            if (pacient.CNP == txtCNP.Text)
-                            {
-                                valid = false;
-                                lblCNP.ForeColor = Color.Red;
-                                txtCNP.BackColor = Color.LightPink;
-                                mesajEroare = "Exista deja un pacient inregistrat cu acest CNP!";
-                                break;
-                            }
-                        }
-                    }
-
-                    if (dtpDataNasterii.Value > DateTime.Now)
-                    {
-                        lblDataNasterii.ForeColor = Color.Red;
-                        valid = false;
-                        mesajEroare = "Data nasterii nu poate fi in viitor!";
-                    }
-                    else if (DateTime.Now.Year - dtpDataNasterii.Value.Year > 120)
-                    {
-                        lblDataNasterii.ForeColor = Color.Red;
-                        valid = false;
-                        mesajEroare = "Data nasterii nu este valida (varsta prea mare)!";
-                    }
-
-                    if (cmbGen.SelectedIndex == -1)
-                    {
-                        lblGen.ForeColor = Color.Red;
-                        valid = false;
-                        mesajEroare = "Selectarea genului este obligatorie!";
-                    }
-
-                    if (string.IsNullOrWhiteSpace(txtAdresa.Text))
-                    {
-                        lblAdresa.ForeColor = Color.Red;
-                        txtAdresa.BackColor = Color.LightPink;
-                        valid = false;
-                        mesajEroare = "Adresa este obligatorie!";
-                    }
-                    else if (txtAdresa.Text.Length < 5)
-                    {
-                        lblAdresa.ForeColor = Color.Red;
-                        txtAdresa.BackColor = Color.LightPink;
-                        valid = false;
-                        mesajEroare = "Adresa trebuie sa contina minim 5 caractere!";
-                    }
-
-                    if (string.IsNullOrWhiteSpace(txtTelefon.Text))
-                    {
-                        lblTelefon.ForeColor = Color.Red;
-                        txtTelefon.BackColor = Color.LightPink;
-                        valid = false;
-                        mesajEroare = "Numarul de telefon este obligatoriu!";
-                    }
-                    else if (!Regex.IsMatch(txtTelefon.Text, @"^(07\d{8}|02\d{8}|03\d{8})$"))
-                    {
-                        lblTelefon.ForeColor = Color.Red;
-                        txtTelefon.BackColor = Color.LightPink;
-                        valid = false;
-                        mesajEroare = "Formatul numarului de telefon este invalid (ex: 07xxxxxxxx, 02xxxxxxxx)!";
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(txtEmail.Text) &&
-                        !Regex.IsMatch(txtEmail.Text, @"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$"))
-                    {
-                        lblEmail.ForeColor = Color.Red;
-                        txtEmail.BackColor = Color.LightPink;
-                        valid = false;
-                        mesajEroare = "Formatul adresei de email este invalid!";
-                    }
-
-                    if (!valid)
-                    {
-                        lblMesajEroare.Text = mesajEroare;
-                        lblMesajEroare.Visible = true;
-                        return;
-                    }
-
-                    try
-                    {
-                        int maxId = adminPacienti.GetMaxIdPacient();
-                        int nouId = maxId + 1;
-
-                        string[] alergii = txtAlergii.Text.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
-                                                    .Select(a => a.Trim())
-                                                    .ToArray();
-
-                        Pacient pacientNou = new Pacient(
-                            nouId,
-                            txtNume.Text.Trim(),
-                            txtPrenume.Text.Trim(),
-                            txtCNP.Text.Trim(),
-                            dtpDataNasterii.Value,
-                            cmbGen.SelectedItem.ToString(),
-                            txtAdresa.Text.Trim(),
-                            txtTelefon.Text.Trim(),
-                            txtEmail.Text.Trim(),
-                            cmbGrupaSanguina.SelectedIndex != -1 ? cmbGrupaSanguina.SelectedItem.ToString() : ""
-                        );
-
-                        pacientNou.SetAlergii(alergii);
-
-                        adminPacienti.AddPacient(pacientNou, caleCompletaFisierPacienti);
-                        MessageBox.Show($"Pacientul '{pacientNou.Nume} {pacientNou.Prenume}' a fost adaugat cu succes!",
-                            "Succes", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        formAdaugarePacient.DialogResult = DialogResult.OK;
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"Eroare la adaugarea pacientului: {ex.Message}",
-                            "Eroare", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
+            private TextBox CreeazaTextBox(int x, int y, int width, string name, int maxLength = 0, bool multiline = false, int height = 0)
+            {
+                TextBox textBox = new TextBox
+                {
+                    Location = new Point(x, y),
+                    Width = width,
+                    Name = name
                 };
 
-                panelFormular.Controls.Add(lblTitluFormular);
-                foreach (Label lbl in eticheteCampuri)
-                {
-                    panelFormular.Controls.Add(lbl);
-                }
-                panelFormular.Controls.Add(txtNume);
-                panelFormular.Controls.Add(txtPrenume);
-                panelFormular.Controls.Add(txtCNP);
-                panelFormular.Controls.Add(dtpDataNasterii);
-                panelFormular.Controls.Add(cmbGen);
-                panelFormular.Controls.Add(txtAdresa);
-                panelFormular.Controls.Add(txtTelefon);
-                panelFormular.Controls.Add(txtEmail);
-                panelFormular.Controls.Add(cmbGrupaSanguina);
-                panelFormular.Controls.Add(txtAlergii);
-                panelFormular.Controls.Add(lblMesajEroare);
-                panelFormular.Controls.Add(btnSalveazaPacient);
+                if (maxLength > 0)
+                    textBox.MaxLength = maxLength;
 
-                formAdaugarePacient.Controls.Add(panelFormular);
-                formAdaugarePacient.ShowDialog();
+                if (multiline)
+                {
+                    textBox.Multiline = true;
+                    textBox.Height = height;
+                }
+
+                return textBox;
+            }
+
+            public void AtaseazaValidatoriEvenimente(AdministrarePacienti_FisierText adminPacienti)
+            {
+                TxtNume.Leave += (s, e) => validator.ValidareNume(TxtNume);
+                TxtPrenume.Leave += (s, e) => validator.ValidarePrenume(TxtPrenume);
+                TxtCNP.Leave += (s, e) => validator.ValidareCNP(TxtCNP, adminPacienti);
+                DtpDataNasterii.ValueChanged += (s, e) => validator.ValidareDataNasterii(DtpDataNasterii);
+                CmbGen.SelectedIndexChanged += (s, e) => validator.ValidareGen(CmbGen);
+                TxtAdresa.Leave += (s, e) => validator.ValidareAdresa(TxtAdresa);
+                TxtTelefon.Leave += (s, e) => validator.ValidareTelefon(TxtTelefon, adminPacienti);
+                TxtEmail.Leave += (s, e) => validator.ValidareEmail(TxtEmail);
             }
         }
 
+        private void BtnAdaugarePacient_Click(object sender, EventArgs e)
+        {
+            string locatieFisierSolutie = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName;
+            string numeFisierPacienti = "Pacienti.txt";
+            string caleCompletaFisierPacienti = Path.Combine(locatieFisierSolutie, numeFisierPacienti);
+
+            AdministrarePacienti_FisierText adminPacientiLocal = adminPacienti;
+            if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.AdaugarePacienti))
+            {
+                using (MetroForm formAdaugarePacient = new MetroForm())
+                {
+                    formAdaugarePacient.Size = new Size(1600, 800);
+                    formAdaugarePacient.StartPosition = FormStartPosition.CenterScreen;
+                    formAdaugarePacient.Style = MetroFramework.MetroColorStyle.Black;
+
+                    InitializatorFormularPacient initializator = new InitializatorFormularPacient(formAdaugarePacient);
+                    initializator.InitializeazaFormular();
+                    initializator.AtaseazaValidatoriEvenimente(adminPacientiLocal);
+
+                    initializator.BtnSalveazaPacient.Click += (s, ev) =>
+                    {
+                        if (!initializator.Validator.ValideazaPacient(
+                            initializator.TxtNume,
+                            initializator.TxtPrenume,
+                            initializator.TxtCNP,
+                            initializator.DtpDataNasterii,
+                            initializator.CmbGen,
+                            initializator.TxtAdresa,
+                            initializator.TxtTelefon,
+                            initializator.TxtEmail,
+                            adminPacientiLocal))
+                        {
+                            return;
+                        }
+
+                        try
+                        {
+                            int maxId = adminPacientiLocal.GetMaxIdPacient();
+                            int nouId = maxId + 1;
+
+                            string[] alergii = initializator.TxtAlergii.Text.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+                                                        .Select(a => a.Trim())
+                                                        .ToArray();
+
+                            Pacient pacientNou = new Pacient(
+                                nouId,
+                                initializator.TxtNume.Text.Trim(),
+                                initializator.TxtPrenume.Text.Trim(),
+                                initializator.TxtCNP.Text.Trim(),
+                                initializator.DtpDataNasterii.Value,
+                                initializator.CmbGen.SelectedItem.ToString(),
+                                initializator.TxtAdresa.Text.Trim(),
+                                initializator.TxtTelefon.Text.Trim(),
+                                initializator.TxtEmail.Text.Trim(),
+                                initializator.CmbGrupaSanguina.SelectedIndex != -1 ? initializator.CmbGrupaSanguina.SelectedItem.ToString() : ""
+                            );
+
+                            pacientNou.SetAlergii(alergii);
+
+                            adminPacientiLocal.AddPacient(pacientNou, caleCompletaFisierPacienti);
+                            MessageBox.Show($"Pacientul '{pacientNou.Nume} {pacientNou.Prenume}' a fost adaugat cu succes!",
+                                "Succes", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            formAdaugarePacient.DialogResult = DialogResult.OK;
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"Eroare la adaugarea pacientului: {ex.Message}",
+                                "Eroare", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    };
+
+                    formAdaugarePacient.ShowDialog();
+                }
+            }
+            else
+            {
+                MessageBox.Show("Nu aveti permisiunea de a adauga pacienti.");
+            }
+        }
+
+
         private void BtnModificarePacient_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("Functionalitate in curs de implementare.", "De implementat");
+            string locatieFisierSolutie = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName;
+            string numeFisierPacienti = "Pacienti.txt";
+            string caleCompletaFisierPacienti = Path.Combine(locatieFisierSolutie, numeFisierPacienti);
+            this.ControlBox = true;
+            this.MinimizeBox = true;
+            this.MaximizeBox = true;
+
+            if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.ModificarePacienti))
+            {
+                string cnpUpdate = Microsoft.VisualBasic.Interaction.InputBox("Introduceti CNP-ul pacientului pentru modificare:", "Modificare pacient");
+
+                Pacient pacientUpdate = adminPacienti.GetPacientDupaCNP(cnpUpdate);
+                if (pacientUpdate != null)
+                {
+                    this.Controls.Clear();
+                    this.Text = "Modificare Pacient";
+
+                    MetroPanel panel = new MetroPanel
+                    {
+                        Dock = DockStyle.Fill,
+                        AutoScroll = true,
+                        Padding = new Padding(20),
+                        BackColor = Color.White
+                    };
+
+                    int labelWidth = 150;
+                    int controlWidth = 350;
+                    int spacing = 40;
+                    int top = 20;
+
+                    MetroLabel CreateLabel(string text, int topPosition)
+                    {
+                        return new MetroLabel
+                        {
+                            Text = text,
+                            Location = new Point(10, topPosition),
+                            Width = labelWidth,
+                            FontSize = MetroFramework.MetroLabelSize.Medium
+                        };
+                    }
+
+                    Control CreateControl(Control control, int topPosition)
+                    {
+                        control.Location = new Point(labelWidth + 20, topPosition);
+                        control.Width = controlWidth;
+                        return control;
+                    }
+
+                    var lblNume = CreateLabel("Nume", top);
+                    var txtNume = (MetroTextBox)CreateControl(
+                        new MetroTextBox { Text = pacientUpdate.Nume }, top);
+
+                    top += spacing;
+
+                    var lblPrenume = CreateLabel("Prenume", top);
+                    var txtPrenume = (MetroTextBox)CreateControl(
+                        new MetroTextBox { Text = pacientUpdate.Prenume }, top);
+
+                    top += spacing;
+
+                    var lblCNP = CreateLabel("CNP", top);
+                    var txtCNP = (MetroTextBox)CreateControl(
+                        new MetroTextBox { Text = pacientUpdate.CNP, ReadOnly = true }, top);
+
+                    top += spacing;
+
+                    var lblData = CreateLabel("Data nasterii", top);
+                    var dtpData = (DateTimePicker)CreateControl(
+                        new DateTimePicker { Value = pacientUpdate.DataNasterii, Format = DateTimePickerFormat.Short }, top);
+
+
+                    top += spacing;
+
+                    var lblGen = CreateLabel("Gen", top);
+                    var cmbGen = (MetroComboBox)CreateControl(
+                        new MetroComboBox(), top);
+                    cmbGen.Items.AddRange(new object[] { "M", "F" });
+                    cmbGen.SelectedItem = pacientUpdate.Gen;
+
+                    top += spacing;
+
+                    var lblAdresa = CreateLabel("Adresa", top);
+                    var txtAdresa = (MetroTextBox)CreateControl(
+                        new MetroTextBox { Text = pacientUpdate.Adresa, Multiline = true, Height = 50 }, top);
+
+                    top += spacing;
+
+                    var lblTelefon = CreateLabel("Telefon", top);
+                    var txtTelefon = (MetroTextBox)CreateControl(
+                        new MetroTextBox { Text = pacientUpdate.Telefon }, top);
+
+                    top += spacing;
+
+                    var lblEmail = CreateLabel("Email", top);
+                    var txtEmail = (MetroTextBox)CreateControl(
+                        new MetroTextBox { Text = pacientUpdate.Email }, top);
+
+                    top += spacing;
+
+                    var lblGrupa = CreateLabel("Grupa sanguina", top);
+                    var cmbGrupa = (MetroComboBox)CreateControl(
+                        new MetroComboBox(), top);
+                    cmbGrupa.Items.AddRange(new object[] { "0+", "0-", "A+", "A-", "B+", "B-", "AB+", "AB-" });
+                    cmbGrupa.SelectedItem = pacientUpdate.GrupaSanguina;
+
+                    top += spacing;
+
+                    var lblAlergii = CreateLabel("Alergii", top);
+                    var txtAlergii = (MetroTextBox)CreateControl(
+                        new MetroTextBox { Text = string.Join(", ", pacientUpdate.Alergii), Multiline = true, Height = 50 }, top);
+
+                    top += spacing + 20;
+
+                    MetroButton btnSalveaza = new MetroButton
+                    {
+                        Text = "Salveaza modificarile",
+                        Width = 220,
+                        Height = 40,
+                        Location = new Point(labelWidth + 20, top),
+                        Theme = MetroFramework.MetroThemeStyle.Light,
+                    };
+
+                    btnSalveaza.Click += (clickSender, clickEventArgs) =>
+                    {
+                        pacientUpdate.Nume = txtNume.Text;
+                        pacientUpdate.Prenume = txtPrenume.Text;
+                        pacientUpdate.DataNasterii = dtpData.Value;
+                        pacientUpdate.Gen = cmbGen.SelectedItem.ToString();
+                        pacientUpdate.Adresa = txtAdresa.Text;
+                        pacientUpdate.Telefon = txtTelefon.Text;
+                        pacientUpdate.Email = txtEmail.Text;
+                        pacientUpdate.GrupaSanguina = cmbGrupa.SelectedItem.ToString();
+                        pacientUpdate.Alergii = txtAlergii.Text.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                                               .Select(a => a.Trim()).ToArray();
+
+                        adminPacienti.UpdatePacient(pacientUpdate, caleCompletaFisierPacienti);
+                        MessageBox.Show("Pacientul a fost modificat cu succes!");
+                        this.Close();
+                    };
+
+                    panel.Controls.AddRange(new Control[]
+                    {
+                lblNume, txtNume,
+                lblPrenume, txtPrenume,
+                lblCNP, txtCNP,
+                lblData, dtpData,
+                lblGen, cmbGen,
+                lblAdresa, txtAdresa,
+                lblTelefon, txtTelefon,
+                lblEmail, txtEmail,
+                lblGrupa, cmbGrupa,
+                lblAlergii, txtAlergii,
+                btnSalveaza
+                    });
+
+                    this.Controls.Add(panel);
+                }
+                else
+                {
+                    MessageBox.Show("Pacientul cu acest CNP nu a fost gasit!");
+                }
+            }
+            else
+            {
+                MessageBox.Show("Nu aveti permisiunea de a modifica pacienti.");
+            }
         }
+
+
+
+
+
+
 
         private void BtnStergerePacient_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("Functionalitate in curs de implementare.", "De implementat");
+            string locatieFisierSolutie = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName;
+            string numeFisierPacienti = "Pacienti.txt";
+            string caleCompletaFisierPacienti = Path.Combine(locatieFisierSolutie, numeFisierPacienti);
+
+            if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.StergerePacienti))
+            {
+                string cnpDelete = Microsoft.VisualBasic.Interaction.InputBox("Introduceti CNP-ul pacientului pentru stergere:", "Stergere pacient");
+
+                Pacient pacientDelete = adminPacienti.GetPacientDupaCNP(cnpDelete);
+                if (pacientDelete != null)
+                {
+                    DialogResult result = MessageBox.Show($"Sigur doriti sa stergeti pacientul {pacientDelete.Nume} {pacientDelete.Prenume}?",
+                        "Confirmare stergere", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                    if (result == DialogResult.Yes)
+                    {
+                        adminPacienti.DeletePacient(pacientDelete, caleCompletaFisierPacienti);
+                        MessageBox.Show("Pacientul a fost sters cu succes!", "Succes", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("Nu exista pacient cu acest CNP!", "Eroare", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            else
+            {
+                MessageBox.Show("Nu aveti permisiuni pentru aceasta actiune!");
+            }
         }
+
 
         private void BtnInapoi_Click(object sender, EventArgs e)
         {
@@ -715,18 +826,29 @@ namespace UI
         {
             Pacient[] pacienti = adminPacienti.GetPacienti(out int nrPacienti);
 
-            using (Form formVizualizare = new Form())
+            if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.StergerePacienti))
             {
-                formVizualizare.Text = "Toti Pacientii";
-                formVizualizare.Size = new Size(700, 400);
-                formVizualizare.StartPosition = FormStartPosition.CenterScreen;
+                MetroForm formVizualizare = new MetroForm
+                {
+                    Text = "Toti Pacientii",
+                    Size = new Size(800, 500),
+                    StartPosition = FormStartPosition.CenterScreen,
+                    MaximizeBox = false,
+                    MinimizeBox = true,
+                    ControlBox = true,
+                    Resizable = false,
+                    Theme = MetroFramework.MetroThemeStyle.Light,
+                    Style = MetroFramework.MetroColorStyle.Blue
+                };
 
+                formVizualizare.Style = MetroFramework.MetroColorStyle.Black;
                 ListView listView = new ListView
                 {
                     Dock = DockStyle.Fill,
                     View = View.Details,
                     FullRowSelect = true,
-                    GridLines = true
+                    GridLines = true,
+                    Font = new Font("Segoe UI", 10)
                 };
 
                 listView.Columns.Add("ID", 50);
@@ -750,8 +872,24 @@ namespace UI
                     listView.Items.Add(item);
                 }
 
-                formVizualizare.Controls.Add(listView);
+                MetroPanel panel = new MetroPanel
+                {
+                    Dock = DockStyle.Fill,
+                    AutoScroll = true,
+                    Padding = new Padding(10),
+                    Style = MetroFramework.MetroColorStyle.Blue,
+                    Theme = MetroFramework.MetroThemeStyle.Light
+                };
+                panel.Controls.Add(listView);
+
+                formVizualizare.Controls.Add(panel);
                 formVizualizare.ShowDialog();
+            }
+
+
+            else
+            {
+                MessageBox.Show("Nu aveti permisiunea de a vizualiza pacienti.");
             }
         }
     }

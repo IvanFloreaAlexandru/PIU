@@ -29,9 +29,11 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+
+            this.Theme = MetroFramework.MetroThemeStyle.Light;
+            this.Style = MetroFramework.MetroColorStyle.Black;
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
-            this.Text = "FormPrincipal";
         }
 
         #endregion

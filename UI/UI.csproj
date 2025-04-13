@@ -33,6 +33,16 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="MetroFramework, Version=1.2.0.3, Culture=neutral, PublicKeyToken=5f91a84759bf584a, processorArchitecture=MSIL">
+      <HintPath>..\packages\MetroFramework.RunTime.1.2.0.3\lib\net40-Client\MetroFramework.dll</HintPath>
+    </Reference>
+    <Reference Include="MetroFramework.Design, Version=1.2.0.3, Culture=neutral, PublicKeyToken=5f91a84759bf584a, processorArchitecture=MSIL">
+      <HintPath>..\packages\MetroFramework.Design.1.2.0.3\lib\net40\MetroFramework.Design.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="MetroFramework.Fonts, Version=1.2.0.3, Culture=neutral, PublicKeyToken=5f91a84759bf584a, processorArchitecture=MSIL">
+      <HintPath>..\packages\MetroFramework.Fonts.1.2.0.3\lib\net40\MetroFramework.Fonts.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.VisualBasic" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -54,9 +64,7 @@
     <Compile Include="FormAutentificare.Designer.cs">
       <DependentUpon>FormAutentificare.cs</DependentUpon>
     </Compile>
-    <Compile Include="FormGestionareDepartamente.cs">
-      <SubType>Form</SubType>
-    </Compile>
+    <Compile Include="FormGestionareDepartamente.cs" />
     <Compile Include="FormGestionareDepartamente.Designer.cs">
       <DependentUpon>FormGestionareDepartamente.cs</DependentUpon>
     </Compile>
@@ -66,9 +74,7 @@
     <Compile Include="FormGestionareMedici.Designer.cs">
       <DependentUpon>FormGestionareMedici.cs</DependentUpon>
     </Compile>
-    <Compile Include="FormGestionarePrescriptii.cs">
-      <SubType>Form</SubType>
-    </Compile>
+    <Compile Include="FormGestionarePrescriptii.cs" />
     <Compile Include="FormGestionarePrescriptii.Designer.cs">
       <DependentUpon>FormGestionarePrescriptii.cs</DependentUpon>
     </Compile>
@@ -98,6 +104,14 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="FormAutentificare.resx">
+      <DependentUpon>FormAutentificare.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormGestionarePacienti.resx">
+      <DependentUpon>FormGestionarePacienti.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -107,6 +121,7 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -133,6 +148,9 @@
       <Project>{6453d1ba-a201-46a8-8959-300eac221441}</Project>
       <Name>Clinica</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="MetroFramework.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

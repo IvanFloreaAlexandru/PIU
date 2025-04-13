@@ -28,10 +28,14 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
-            this.Text = "GestionarePacienti";
+            this.SuspendLayout();
+            // 
+            // FormGestionarePacienti
+            // 
+            this.ClientSize = new System.Drawing.Size(800, 400);
+            this.Name = "FormGestionarePacienti";
+            this.ResumeLayout(false);
+
         }
 
         #endregion
