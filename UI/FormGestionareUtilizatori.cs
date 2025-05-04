@@ -9,6 +9,8 @@ using System;
 using System.Linq;
 using System.Text.RegularExpressions;
 using GestionareSpital;
+using MetroFramework;
+using System.Collections.Generic;
 
 namespace UI
 {
@@ -52,22 +54,25 @@ namespace UI
             MetroButton btnAdaugareUtilizator = new MetroButton { Text = "Adaugare utilizator nou", Size = new Size(250, 40) };
             MetroButton btnVizualizareUtilizatori = new MetroButton { Text = "Vizualizare toti utilizatorii", Size = new Size(250, 40) };
             MetroButton btnModificareUtilizator = new MetroButton { Text = "Modificare utilizator", Size = new Size(250, 40) };
+            MetroButton btnCautareUtilizator = new MetroButton { Text = "Cautare utilizator", Size = new Size(250, 40) };
             MetroButton btnInchide = new MetroButton { Text = "Inchide", Size = new Size(250, 40) };
 
             btnAdaugareUtilizator.Click += BtnAdaugareUtilizator_Click;
             btnVizualizareUtilizatori.Click += BtnVizualizareUtilizatori_Click;
             btnModificareUtilizator.Click += BtnModificareUtilizatori_Click;
+            btnCautareUtilizator.Click += BtnCautareUtilizator_Click;
             btnInchide.Click += (s, e) => this.Close();
 
             panelMeniu.Controls.Add(btnAdaugareUtilizator);
             panelMeniu.Controls.Add(btnVizualizareUtilizatori);
             panelMeniu.Controls.Add(btnModificareUtilizator);
+            panelMeniu.Controls.Add(btnCautareUtilizator);
             panelMeniu.Controls.Add(btnInchide);
 
             this.Controls.Add(panelMeniu);
         }
 
-    public static class ConstanteValidare
+        public static class ConstanteValidare
         {
             public const int MINIM_CARACTERE_NUME = 3;
             public const int MINIM_CARACTERE_PRENUME = 3;
@@ -677,6 +682,442 @@ namespace UI
 
         }
 
+        private void BtnCautareUtilizator_Click(object sender, EventArgs e)
+        {
+            if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizareUtilizatori))
+            {
+                using (MetroForm formCautare = new MetroForm())
+                {
+                    formCautare.Text = "Cautare Utilizatori";
+                    formCautare.Size = new Size(600, 500);
+                    formCautare.StartPosition = FormStartPosition.CenterScreen;
+                    formCautare.Style = MetroFramework.MetroColorStyle.Black;
+
+                    MetroPanel panelOptiuni = new MetroPanel
+                    {
+                        Dock = DockStyle.Top,
+                        Height = 200,
+                        AutoScroll = true,
+                        Padding = new Padding(10)
+                    };
+
+                    MetroLabel lblTitlu = new MetroLabel
+                    {
+                        Text = "Selectati criteriul de cautare:",
+                        FontWeight = MetroLabelWeight.Bold,
+                        Location = new Point(10, 10),
+                        Size = new Size(400, 30)
+                    };
+                    panelOptiuni.Controls.Add(lblTitlu);
+
+                    GroupBox groupTipCautare = new GroupBox
+                    {
+                        Text = "Tip de cautare",
+                        Location = new Point(10, 40),
+                        Size = new Size(250, 80)
+                    };
+
+                    RadioButton radioExact = new RadioButton
+                    {
+                        Text = "Potrivire exacta",
+                        Location = new Point(10, 20),
+                        Checked = true
+                    };
+                    RadioButton radioPartial = new RadioButton
+                    {
+                        Text = "Potrivire partiala",
+                        Location = new Point(10, 45)
+                    };
+
+                    groupTipCautare.Controls.Add(radioExact);
+                    groupTipCautare.Controls.Add(radioPartial);
+                    panelOptiuni.Controls.Add(groupTipCautare);
+
+                    GroupBox groupCampuri = new GroupBox
+                    {
+                        Text = "Criterii de cautare",
+                        Location = new Point(270, 40),
+                        Size = new Size(300, 150)
+                    };
+
+                    CheckBox checkId = new CheckBox { Text = "ID Utilizator", Location = new Point(10, 20), Checked = true };
+                    CheckBox checkNume = new CheckBox { Text = "Nume", Location = new Point(10, 45) };
+                    CheckBox checkPrenume = new CheckBox { Text = "Prenume", Location = new Point(10, 70) };
+                    CheckBox checkEmail = new CheckBox { Text = "Email", Location = new Point(150, 20) };
+                    CheckBox checkTelefon = new CheckBox { Text = "Telefon", Location = new Point(150, 45) };
+                    CheckBox checkRang = new CheckBox { Text = "Rang", Location = new Point(150, 70) };
+
+                    groupCampuri.Controls.Add(checkId);
+                    groupCampuri.Controls.Add(checkNume);
+                    groupCampuri.Controls.Add(checkPrenume);
+                    groupCampuri.Controls.Add(checkEmail);
+                    groupCampuri.Controls.Add(checkTelefon);
+                    groupCampuri.Controls.Add(checkRang);
+                    panelOptiuni.Controls.Add(groupCampuri);
+                    List<CheckBox> listaCheckBoxuri = new List<CheckBox> { checkId, checkNume, checkPrenume, checkEmail, checkTelefon, checkRang };
+                    void CheckBox_CheckedChanged(object s, EventArgs ev)
+                    {
+                        if (s is CheckBox current)
+                        {
+                            if (current.Checked)
+                            {
+                                foreach (var cb in listaCheckBoxuri)
+                                {
+                                    if (cb != current)
+                                        cb.Checked = false;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            MessageBox.Show("Evenimentul nu a fost declansat de un CheckBox.", "Eroare");
+                        }
+                    }
+
+
+                    foreach (var cb in listaCheckBoxuri)
+                    {
+                        cb.CheckedChanged += CheckBox_CheckedChanged;
+                    }
+
+
+                    MetroLabel lblTermenCautare = new MetroLabel
+                    {
+                        Text = "Termen de cautare:",
+                        Location = new Point(10, 250),
+                        Size = new Size(150, 30)
+                    };
+                    formCautare.Controls.Add(lblTermenCautare);
+
+                    MetroTextBox txtTermenCautare = new MetroTextBox
+                    {
+                        Location = new Point(160, 250),
+                        Size = new Size(250, 30),
+                    };
+                    formCautare.Controls.Add(txtTermenCautare);
+
+                    MetroLabel lblRezultate = new MetroLabel
+                    {
+                        Text = "Rezultatele cautarii:",
+                        Location = new Point(10, 290),
+                        Size = new Size(150, 30)
+                    };
+                    formCautare.Controls.Add(lblRezultate);
+
+                    ListView listViewRezultate = new ListView
+                    {
+                        Location = new Point(10, 320),
+                        Size = new Size(570, 130),
+                        View = View.Details,
+                        FullRowSelect = true,
+                        GridLines = true
+                    };
+
+                    listViewRezultate.Columns.Add("ID", 50);
+                    listViewRezultate.Columns.Add("Nume", 120);
+                    listViewRezultate.Columns.Add("Prenume", 120);
+                    listViewRezultate.Columns.Add("Email", 180);
+                    listViewRezultate.Columns.Add("Telefon", 100);
+                    listViewRezultate.Columns.Add("Rang", 100);
+                    formCautare.Controls.Add(listViewRezultate);
+
+                    MetroButton btnCauta = new MetroButton
+                    {
+                        Text = "Cauta",
+                        Location = new Point(420, 250),
+                        Size = new Size(100, 30)
+                    };
+                    formCautare.Controls.Add(btnCauta);
+
+                    btnCauta.Click += (s, ev) =>
+                    {
+                        if (string.IsNullOrWhiteSpace(txtTermenCautare.Text))
+                        {
+                            MessageBox.Show("Introduceti un termen de cautare!", "Atentie",
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return;
+                        }
+
+                        if (!checkId.Checked && !checkNume.Checked && !checkPrenume.Checked &&
+                            !checkEmail.Checked && !checkTelefon.Checked && !checkRang.Checked)
+                        {
+                            MessageBox.Show("Selectati cel putin un criteriu de cautare!", "Atentie",
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return;
+                        }
+
+                        CautaUtilizatori(
+                            listViewRezultate,
+                            txtTermenCautare.Text,
+                            radioPartial.Checked,
+                            checkId.Checked,
+                            checkNume.Checked,
+                            checkPrenume.Checked,
+                            checkEmail.Checked,
+                            checkTelefon.Checked,
+                            checkRang.Checked
+                        );
+                    };
+
+                    listViewRezultate.DoubleClick += (s, ev) =>
+                    {
+                        if (listViewRezultate.SelectedItems.Count > 0)
+                        {
+                            int idUtilizator = int.Parse(listViewRezultate.SelectedItems[0].Text);
+                            AfiseazaDetaliiUtilizator(idUtilizator);
+                        }
+                    };
+
+                    formCautare.Controls.Add(panelOptiuni);
+                    formCautare.ShowDialog();
+                }
+            }
+            else
+            {
+                MessageBox.Show("Nu aveti permisiunea de a cauta utilizatori.",
+                    "Acces restrictionat", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        private void CautaUtilizatori(
+     ListView listViewRezultate,
+     string termenCautare,
+     bool cautarePartiala,
+     bool cautaDupaId,
+     bool cautaDupaNume,
+     bool cautaDupaPrenume,
+     bool cautaDupaEmail,
+     bool cautaDupaTelefon,
+     bool cautaDupaRang)
+        {
+            listViewRezultate.Items.Clear();
+
+            try
+            {
+                string[] potentialPaths = new string[]
+                {
+            Path.Combine(Directory.GetCurrentDirectory(), "User.txt"),
+            Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName, "User.txt")
+                };
+
+                string caleCompletaFisier = potentialPaths.FirstOrDefault(File.Exists);
+                if (string.IsNullOrEmpty(caleCompletaFisier))
+                {
+                    MessageBox.Show("Fisierul User.txt nu a fost gasit!", "Eroare", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                string[] linii = File.ReadAllLines(caleCompletaFisier);
+                if (linii.Length == 0)
+                {
+                    MessageBox.Show("Fisierul este gol!", "Informatie", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                string termLower = termenCautare.ToLower();
+                bool gasite = false;
+
+                foreach (string linie in linii)
+                {
+                    string[] detaliiUtilizator = linie.Split(',');
+                    if (detaliiUtilizator.Length < 6) continue;
+
+                    bool potrivire = false;
+
+                    if (cautaDupaId && detaliiUtilizator[0].Contains(termenCautare))
+                    {
+                        potrivire = true;
+                    }
+
+                    if (cautaDupaNume)
+                    {
+                        string numeLower = detaliiUtilizator[1].ToLower();
+                        if ((cautarePartiala && numeLower.Contains(termLower)) ||
+                            (!cautarePartiala && numeLower.Equals(termLower)))
+                        {
+                            potrivire = true;
+                        }
+                    }
+
+                    if (cautaDupaPrenume)
+                    {
+                        string prenumeLower = detaliiUtilizator[2].ToLower();
+                        if ((cautarePartiala && prenumeLower.Contains(termLower)) ||
+                            (!cautarePartiala && prenumeLower.Equals(termLower)))
+                        {
+                            potrivire = true;
+                        }
+                    }
+
+                    if (cautaDupaEmail)
+                    {
+                        string emailLower = detaliiUtilizator[3].ToLower();
+                        if ((cautarePartiala && emailLower.Contains(termLower)) ||
+                            (!cautarePartiala && emailLower.Equals(termLower)))
+                        {
+                            potrivire = true;
+                        }
+                    }
+
+                    if (cautaDupaTelefon && detaliiUtilizator.Length > 4)
+                    {
+                        string telefonLower = detaliiUtilizator[4].ToLower();
+                        if ((cautarePartiala && telefonLower.Contains(termLower)) ||
+                            (!cautarePartiala && telefonLower.Equals(termLower)))
+                        {
+                            potrivire = true;
+                        }
+                    }
+
+                    if (cautaDupaRang)
+                    {
+                        string rangLower = detaliiUtilizator[5].ToLower();
+                        if ((cautarePartiala && rangLower.Contains(termLower)) ||
+                            (!cautarePartiala && rangLower.Equals(termLower)))
+                        {
+                            potrivire = true;
+                        }
+                    }
+
+                    if (potrivire)
+                    {
+                        ListViewItem item = new ListViewItem(detaliiUtilizator[0]);
+                        item.SubItems.Add(detaliiUtilizator[1]);
+                        item.SubItems.Add(detaliiUtilizator[2]);
+                        item.SubItems.Add(detaliiUtilizator[3]);
+                        item.SubItems.Add(detaliiUtilizator.Length > 4 ? detaliiUtilizator[4] : "N/A");
+                        item.SubItems.Add(detaliiUtilizator[5]);
+
+                        listViewRezultate.Items.Add(item);
+                        gasite = true;
+                    }
+                }
+
+                if (!gasite)
+                {
+                    MessageBox.Show("Nu s-au gasit utilizatori care sa corespunda criteriilor selectate.",
+                        "Rezultat cautare", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Eroare in timpul cautarii: {ex.Message}", "Eroare",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void AfiseazaDetaliiUtilizator(int idUtilizator)
+        {
+            User utilizator = GetUtilizatorDupaId(idUtilizator);
+
+            if (utilizator == null)
+            {
+                MessageBox.Show("Nu s-a gasit utilizatorul selectat!", "Eroare",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            using (MetroForm formDetalii = new MetroForm())
+            {
+                formDetalii.Text = $"Detalii Utilizator #{utilizator.IdUser}";
+                formDetalii.Size = new Size(500, 400);
+                formDetalii.StartPosition = FormStartPosition.CenterScreen;
+                formDetalii.Style = MetroFramework.MetroColorStyle.Black;
+                formDetalii.Padding = new Padding(20);
+
+                TableLayoutPanel tableLayout = new TableLayoutPanel
+                {
+                    Dock = DockStyle.Fill,
+                    ColumnCount = 2,
+                    RowCount = 6,
+                    CellBorderStyle = TableLayoutPanelCellBorderStyle.Single
+                };
+
+                tableLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
+                tableLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70F));
+
+                AddRowToTable(tableLayout, 0, "ID Utilizator:", utilizator.IdUser.ToString());
+                AddRowToTable(tableLayout, 1, "Nume:", utilizator.Nume);
+                AddRowToTable(tableLayout, 2, "Prenume:", utilizator.Prenume);
+                AddRowToTable(tableLayout, 3, "Email:", utilizator.Email);
+                AddRowToTable(tableLayout, 4, "Telefon:", utilizator.Telefon ?? "N/A");
+                AddRowToTable(tableLayout, 5, "Rang:", utilizator.Rang.ToString());
+
+                formDetalii.Controls.Add(tableLayout);
+                formDetalii.ShowDialog();
+            }
+        }
+        private void AddRowToTable(TableLayoutPanel table, int rowIndex, string label, string value)
+        {
+            Label lblLabel = new Label
+            {
+                Text = label,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Padding = new Padding(5)
+            };
+
+            Label lblValue = new Label
+            {
+                Text = value,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(5),
+                AutoSize = false
+            };
+
+            table.Controls.Add(lblLabel, 0, rowIndex);
+            table.Controls.Add(lblValue, 1, rowIndex);
+        }
+
+        private User GetUtilizatorDupaId(int idUtilizator)
+        {
+            try
+            {
+                string[] potentialPaths = new string[]
+                {
+            Path.Combine(Directory.GetCurrentDirectory(), "User.txt"),
+            Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName, "User.txt")
+                };
+
+                string caleCompletaFisier = potentialPaths.FirstOrDefault(File.Exists);
+                if (string.IsNullOrEmpty(caleCompletaFisier))
+                {
+                    MessageBox.Show("Fisierul User.txt nu a fost gasit!", "Eroare", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return null;
+                }
+
+                string[] linii = File.ReadAllLines(caleCompletaFisier);
+
+                foreach (string linie in linii)
+                {
+                    string[] detaliiUtilizator = linie.Split(',');
+                    if (detaliiUtilizator.Length < 6) continue;
+
+                    if (int.TryParse(detaliiUtilizator[0], out int id) && id == idUtilizator)
+                    {
+                        User utilizator = new User
+                        {
+                            IdUser = id,
+                            Nume = detaliiUtilizator[1],
+                            Prenume = detaliiUtilizator[2],
+                            Email = detaliiUtilizator[3],
+                            Telefon = detaliiUtilizator.Length > 4 ? detaliiUtilizator[4] : null,
+                            Rang = (RangUtilizator)Enum.Parse(typeof(RangUtilizator), detaliiUtilizator[5])
+                        };
+                        return utilizator;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Eroare la cautarea utilizatorului: {ex.Message}", "Eroare",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+            return null;
+        }
 
 
 

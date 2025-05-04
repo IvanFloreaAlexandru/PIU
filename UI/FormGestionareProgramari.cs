@@ -48,7 +48,6 @@ namespace UI
             this.MaximizeBox = false;
             this.Resizable = false;
 
-
             MetroPanel panelMeniu = new MetroPanel
             {
                 Dock = DockStyle.Fill,
@@ -84,6 +83,7 @@ namespace UI
             var btnVizualizareProgramariPacient = CreateMetroButton("Programari pacient");
             var btnVizualizareProgramariMedic = CreateMetroButton("Programari medic");
             var btnVizualizareProgramariData = CreateMetroButton("Programari dupa data");
+            var btnCautareProgramari = CreateMetroButton("Cautare programari");
             var btnInchide = CreateMetroButton("inchide");
 
             btnAdaugareProgramare.Click += BtnAdaugareProgramare_Click;
@@ -91,6 +91,7 @@ namespace UI
             btnVizualizareProgramariPacient.Click += BtnVizualizareProgramariPacient_Click;
             btnVizualizareProgramariMedic.Click += BtnVizualizareProgramariMedic_Click;
             btnVizualizareProgramariData.Click += BtnVizualizareProgramariData_Click;
+            btnCautareProgramari.Click += BtnCautareProgramari_Click;
             btnInchide.Click += (s, e) => this.Close();
 
             flowPanel.Controls.Add(btnAdaugareProgramare);
@@ -98,6 +99,7 @@ namespace UI
             flowPanel.Controls.Add(btnVizualizareProgramariPacient);
             flowPanel.Controls.Add(btnVizualizareProgramariMedic);
             flowPanel.Controls.Add(btnVizualizareProgramariData);
+            flowPanel.Controls.Add(btnCautareProgramari);
             flowPanel.Controls.Add(btnInchide);
 
             panelMeniu.Controls.Add(flowPanel);
@@ -814,6 +816,363 @@ namespace UI
             else
             {
                 MessageBox.Show("Nu aveti permisiunea de a vizualiza programari!");
+            }
+        }
+
+
+        private void BtnCautareProgramari_Click(object sender, EventArgs e)
+        {
+            if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizareProgramari))
+            {
+                using (MetroForm formCautare = new MetroForm())
+                {
+                    formCautare.Size = new Size(1200, 600);
+                    formCautare.StartPosition = FormStartPosition.CenterScreen;
+                    formCautare.Style = MetroFramework.MetroColorStyle.Black;
+                    formCautare.MaximizeBox = false;
+                    formCautare.MinimizeBox = false;
+
+                    MetroPanel panelPrincipal = new MetroPanel
+                    {
+                        Dock = DockStyle.Fill,
+                        AutoScroll = true,
+                        Padding = new Padding(20)
+                    };
+
+                    MetroLabel lblTitlu = new MetroLabel
+                    {
+                        Text = "Selectati criteriile de cautare:",
+                        Location = new Point(20, 20),
+                        Size = new Size(300, 30),
+                        FontWeight = MetroFramework.MetroLabelWeight.Bold,
+                        FontSize = MetroFramework.MetroLabelSize.Medium
+                    };
+
+                    GroupBox gbCriterii = new GroupBox
+                    {
+                        Text = "Campuri de cautare",
+                        Location = new Point(20, 60),
+                        Size = new Size(250, 200),
+                        Font = new Font(SystemFonts.DefaultFont.FontFamily, 9)
+                    };
+
+                    CheckBox chkPacient = new CheckBox { Text = "Pacient", Location = new Point(20, 30), AutoSize = true };
+                    CheckBox chkMedic = new CheckBox { Text = "Medic", Location = new Point(20, 60), AutoSize = true };
+                    CheckBox chkData = new CheckBox { Text = "Data programarii", Location = new Point(20, 90), AutoSize = true };
+                    CheckBox chkMotiv = new CheckBox { Text = "Motiv", Location = new Point(20, 120), AutoSize = true };
+                    CheckBox chkStatus = new CheckBox { Text = "Status", Location = new Point(20, 150), AutoSize = true };
+
+                    gbCriterii.Controls.AddRange(new Control[] { chkPacient, chkMedic, chkData, chkMotiv, chkStatus });
+
+                    GroupBox gbPotrivire = new GroupBox
+                    {
+                        Text = "Tip de potrivire",
+                        Location = new Point(300, 60),
+                        Size = new Size(250, 120),
+                        Font = new Font(SystemFonts.DefaultFont.FontFamily, 9)
+                    };
+
+                    RadioButton rbExact = new RadioButton { Text = "Potrivire exacta", Location = new Point(20, 30), AutoSize = true, Checked = true };
+                    RadioButton rbPartial = new RadioButton { Text = "Potrivire partiala", Location = new Point(20, 60), AutoSize = true };
+
+                    gbPotrivire.Controls.AddRange(new Control[] { rbExact, rbPartial });
+
+                    MetroLabel lblValoareCautare = new MetroLabel
+                    {
+                        Text = "Introduceti termenii de cautare:",
+                        Location = new Point(20, 280),
+                        Size = new Size(250, 30)
+                    };
+
+                    TextBox txtValoareCautare = new TextBox
+                    {
+                        Location = new Point(20, 310),
+                        Size = new Size(530, 30)
+                    };
+
+                    MetroButton btnCauta = new MetroButton
+                    {
+                        Text = "Cauta",
+                        Location = new Point(20, 360),
+                        Size = new Size(530, 40)
+                    };
+
+                    btnCauta.Click += (s, ev) =>
+                    {
+                        if (!chkPacient.Checked && !chkMedic.Checked && !chkData.Checked && !chkMotiv.Checked && !chkStatus.Checked)
+                        {
+                            MessageBox.Show("Selectati cel putin un criteriu de cautare!", "Atentie",
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return;
+                        }
+
+                        if (string.IsNullOrWhiteSpace(txtValoareCautare.Text))
+                        {
+                            MessageBox.Show("Introduceti termenii de cautare!", "Atentie",
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return;
+                        }
+
+                        Programare[] toateProgramarile = adminProgramari.GetProgramari(out int nrProgramari);
+                        List<Programare> rezultateCautare = new List<Programare>();
+
+                        string termenCautare = txtValoareCautare.Text.ToLower();
+                        bool estePotrivireExacta = rbExact.Checked;
+
+                        foreach (Programare programare in toateProgramarile)
+                        {
+                            bool adaugaProgramare = false;
+
+                            if (chkPacient.Checked)
+                            {
+                                Pacient pacient = adminPacienti.GetPacientDupaId(programare.IdPacient);
+                                string numePacient = $"{pacient.Nume} {pacient.Prenume}".ToLower();
+
+                                if (estePotrivireExacta)
+                                {
+                                    if (numePacient.Equals(termenCautare))
+                                        adaugaProgramare = true;
+                                }
+                                else
+                                {
+                                    if (numePacient.Contains(termenCautare))
+                                        adaugaProgramare = true;
+                                }
+                            }
+
+                            if (chkMedic.Checked && !adaugaProgramare)
+                            {
+                                Medic medic = adminMedici.GetMedicDupaId(programare.IdMedic);
+                                string numeMedic = $"{medic.Nume} {medic.Prenume}".ToLower();
+
+                                if (estePotrivireExacta)
+                                {
+                                    if (numeMedic.Equals(termenCautare))
+                                        adaugaProgramare = true;
+                                }
+                                else
+                                {
+                                    if (numeMedic.Contains(termenCautare))
+                                        adaugaProgramare = true;
+                                }
+                            }
+
+                            if (chkData.Checked && !adaugaProgramare)
+                            {
+                                string dataProgramare = programare.DataOra.ToString("yyyy-MM-dd").ToLower();
+
+                                if (estePotrivireExacta)
+                                {
+                                    if (dataProgramare.Equals(termenCautare))
+                                        adaugaProgramare = true;
+                                }
+                                else
+                                {
+                                    if (dataProgramare.Contains(termenCautare))
+                                        adaugaProgramare = true;
+                                }
+                            }
+
+                            if (chkMotiv.Checked && !adaugaProgramare)
+                            {
+                                string motiv = programare.Motiv.ToLower();
+
+                                if (estePotrivireExacta)
+                                {
+                                    if (motiv.Equals(termenCautare))
+                                        adaugaProgramare = true;
+                                }
+                                else
+                                {
+                                    if (motiv.Contains(termenCautare))
+                                        adaugaProgramare = true;
+                                }
+                            }
+
+                            if (chkStatus.Checked && !adaugaProgramare)
+                            {
+                                string status = programare.Status.ToLower();
+
+                                if (estePotrivireExacta)
+                                {
+                                    if (status.Equals(termenCautare))
+                                        adaugaProgramare = true;
+                                }
+                                else
+                                {
+                                    if (status.Contains(termenCautare))
+                                        adaugaProgramare = true;
+                                }
+                            }
+
+                            if (adaugaProgramare)
+                            {
+                                rezultateCautare.Add(programare);
+                            }
+                        }
+
+                        AfiseazaRezultateCautare(rezultateCautare.ToArray());
+                    };
+
+                    panelPrincipal.Controls.Add(lblTitlu);
+                    panelPrincipal.Controls.Add(gbCriterii);
+                    panelPrincipal.Controls.Add(gbPotrivire);
+                    panelPrincipal.Controls.Add(lblValoareCautare);
+                    panelPrincipal.Controls.Add(txtValoareCautare);
+                    panelPrincipal.Controls.Add(btnCauta);
+
+                    formCautare.Controls.Add(panelPrincipal);
+                    formCautare.ShowDialog();
+                }
+            }
+            else
+            {
+                MessageBox.Show("Nu aveti permisiunea de a cauta programari!", "Acces interzis",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        private void AfiseazaRezultateCautare(Programare[] programari)
+        {
+            using (MetroForm formRezultate = new MetroForm())
+            {
+                formRezultate.Text = "Rezultate Cautare";
+                formRezultate.Size = new Size(800, 500);
+                formRezultate.StartPosition = FormStartPosition.CenterScreen;
+                formRezultate.Style = MetroFramework.MetroColorStyle.Black;
+
+                MetroLabel lblInfo = new MetroLabel
+                {
+                    Text = $"S-au gasit {programari.Length} programari conform criteriilor selectate.",
+                    Dock = DockStyle.Top,
+                    Height = 30,
+                    FontWeight = MetroFramework.MetroLabelWeight.Bold
+                };
+
+                ListView listViewRezultate = new ListView
+                {
+                    Dock = DockStyle.Fill,
+                    View = View.Details,
+                    FullRowSelect = true,
+                    GridLines = true
+                };
+
+                listViewRezultate.Columns.Add("ID", 50);
+                listViewRezultate.Columns.Add("Pacient", 150);
+                listViewRezultate.Columns.Add("Medic", 150);
+                listViewRezultate.Columns.Add("Data", 120);
+                listViewRezultate.Columns.Add("Ora", 80);
+                listViewRezultate.Columns.Add("Durata", 80);
+                listViewRezultate.Columns.Add("Motiv", 150);
+                listViewRezultate.Columns.Add("Status", 100);
+
+                foreach (var programare in programari)
+                {
+                    Pacient pacient = adminPacienti.GetPacientDupaId(programare.IdPacient);
+                    Medic medic = adminMedici.GetMedicDupaId(programare.IdMedic);
+
+                    ListViewItem item = new ListViewItem(programare.IdProgramare.ToString());
+                    item.SubItems.Add($"{pacient.Nume} {pacient.Prenume}");
+                    item.SubItems.Add($"Dr. {medic.Nume} {medic.Prenume}");
+                    item.SubItems.Add(programare.DataOra.ToString("yyyy-MM-dd"));
+                    item.SubItems.Add(programare.DataOra.ToString("HH:mm"));
+                    item.SubItems.Add(programare.Durata.ToString(@"hh\:mm"));
+                    item.SubItems.Add(programare.Motiv);
+                    item.SubItems.Add(programare.Status);
+
+                    if (programare.Status == StatusProgramare.Anulat.ToString())
+                        item.BackColor = Color.LightPink;
+                    else if (programare.Status == StatusProgramare.Confirmat.ToString())
+                        item.BackColor = Color.LightGreen;
+                    else if (programare.Status == StatusProgramare.InAsteptare.ToString())
+                        item.BackColor = Color.LightYellow;
+                    else if (programare.Status == StatusProgramare.Finalizat.ToString())
+                        item.BackColor = Color.LightBlue;
+
+                    listViewRezultate.Items.Add(item);
+                }
+
+                Panel panelFiltrare = new Panel
+                {
+                    Dock = DockStyle.Bottom,
+                    Height = 60
+                };
+
+                Label lblFilterStatus = new Label
+                {
+                    Text = "Filtrare rapida dupa status:",
+                    Location = new Point(10, 20),
+                    AutoSize = true
+                };
+
+                ComboBox cboFilterStatus = new ComboBox
+                {
+                    Location = new Point(160, 17),
+                    Width = 150,
+                    DropDownStyle = ComboBoxStyle.DropDownList
+                };
+
+                cboFilterStatus.Items.Add("Toate statusurile");
+                foreach (StatusProgramare status in Enum.GetValues(typeof(StatusProgramare)))
+                {
+                    cboFilterStatus.Items.Add(status);
+                }
+                cboFilterStatus.SelectedIndex = 0;
+
+
+                cboFilterStatus.SelectedIndexChanged += (s, e) =>
+                {
+                    listViewRezultate.Items.Clear();
+
+                    foreach (var programare in programari)
+                    {
+                        bool afiseazaProgramare = false;
+                        if (cboFilterStatus.SelectedIndex == 0)
+                        {
+                            afiseazaProgramare = true;
+                        }
+                        else
+                        {
+                            string statusSelectat = cboFilterStatus.SelectedItem.ToString();
+                            afiseazaProgramare = programare.Status == statusSelectat;
+                        }
+
+                        if (afiseazaProgramare)
+                        {
+                            Pacient pacient = adminPacienti.GetPacientDupaId(programare.IdPacient);
+                            Medic medic = adminMedici.GetMedicDupaId(programare.IdMedic);
+
+                            ListViewItem item = new ListViewItem(programare.IdProgramare.ToString());
+                            item.SubItems.Add($"{pacient.Nume} {pacient.Prenume}");
+                            item.SubItems.Add($"Dr. {medic.Nume} {medic.Prenume}");
+                            item.SubItems.Add(programare.DataOra.ToString("yyyy-MM-dd"));
+                            item.SubItems.Add(programare.DataOra.ToString("HH:mm"));
+                            item.SubItems.Add(programare.Durata.ToString(@"hh\:mm"));
+                            item.SubItems.Add(programare.Motiv);
+                            item.SubItems.Add(programare.Status);
+
+                            if (programare.Status == StatusProgramare.Anulat.ToString())
+                                item.BackColor = Color.LightPink;
+                            else if (programare.Status == StatusProgramare.Confirmat.ToString())
+                                item.BackColor = Color.LightGreen;
+                            else if (programare.Status == StatusProgramare.InAsteptare.ToString())
+                                item.BackColor = Color.LightYellow;
+                            else if (programare.Status == StatusProgramare.Finalizat.ToString())
+                                item.BackColor = Color.LightBlue;
+
+                            listViewRezultate.Items.Add(item);
+                        }
+                    }
+                };
+
+                panelFiltrare.Controls.Add(lblFilterStatus);
+                panelFiltrare.Controls.Add(cboFilterStatus);
+
+                formRezultate.Controls.Add(listViewRezultate);
+                formRezultate.Controls.Add(lblInfo);
+                formRezultate.Controls.Add(panelFiltrare);
+
+                formRezultate.ShowDialog();
             }
         }
 

@@ -90,9 +90,7 @@
     <Compile Include="FormPrincipal.Designer.cs">
       <DependentUpon>FormPrincipal.cs</DependentUpon>
     </Compile>
-    <Compile Include="FormGestionarePacienti.cs">
-      <SubType>Form</SubType>
-    </Compile>
+    <Compile Include="FormGestionarePacienti.cs" />
     <Compile Include="FormGestionarePacienti.Designer.cs">
       <DependentUpon>FormGestionarePacienti.cs</DependentUpon>
     </Compile>

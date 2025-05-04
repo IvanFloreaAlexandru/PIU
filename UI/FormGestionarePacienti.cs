@@ -13,6 +13,13 @@ using System.Collections.Generic;
 
 namespace UI
 {
+    public static class StringExtensions
+    {
+        public static bool Contains(this string source, string value, StringComparison comparisonType)
+        {
+            return source?.IndexOf(value, comparisonType) >= 0;
+        }
+    }
     public partial class FormGestionarePacienti : MetroForm
     {
         private AdministrarePacienti_FisierText adminPacienti;
@@ -22,6 +29,7 @@ namespace UI
         private Button btnModificarePacient;
         private Button btnStergerePacient;
         private Button btnVizualizarePacienti;
+        private Button BtnVizualizarePacientiSearch;
         private Button btnInapoi;
         private TextBox txtNume;
         private TextBox txtPrenume;
@@ -45,12 +53,14 @@ namespace UI
             btnModificarePacient = new MetroButton { Text = "Modificare pacient" };
             btnStergerePacient = new MetroButton { Text = "Stergere pacient" };
             btnVizualizarePacienti = new MetroButton { Text = "Vizualizare pacienti" };
+            BtnVizualizarePacientiSearch = new MetroButton { Text = "Cautare pacienti dupa criteriu" };
             btnInapoi = new MetroButton { Text = "Inapoi" };
 
             btnAdaugarePacient.Size = new Size(200, 40);
             btnModificarePacient.Size = new Size(200, 40);
             btnStergerePacient.Size = new Size(200, 40);
             btnVizualizarePacienti.Size = new Size(200, 40);
+            BtnVizualizarePacientiSearch.Size = new Size(200, 40);
             btnInapoi.Size = new Size(200, 40);
 
             FlowLayoutPanel panel = new FlowLayoutPanel
@@ -64,6 +74,7 @@ namespace UI
             panel.Controls.Add(btnModificarePacient);
             panel.Controls.Add(btnStergerePacient);
             panel.Controls.Add(btnVizualizarePacienti);
+            panel.Controls.Add(BtnVizualizarePacientiSearch);
             panel.Controls.Add(btnInapoi);
             this.Controls.Add(panel);
 
@@ -71,6 +82,7 @@ namespace UI
             btnModificarePacient.Click += BtnModificarePacient_Click;
             btnStergerePacient.Click += BtnStergerePacient_Click;
             btnVizualizarePacienti.Click += BtnVizualizarePacienti_Click;
+            BtnVizualizarePacientiSearch.Click += BtnVizualizarePacientiSearch_Click;
             btnInapoi.Click += BtnInapoi_Click;
             this.Style = MetroFramework.MetroColorStyle.Black;
             this.Size = new Size(800, 400);
@@ -831,12 +843,12 @@ namespace UI
                 MetroForm formVizualizare = new MetroForm
                 {
                     Text = "Toti Pacientii",
-                    Size = new Size(800, 500),
+                    Size = new Size(1200, 600),
                     StartPosition = FormStartPosition.CenterScreen,
                     MaximizeBox = false,
                     MinimizeBox = true,
                     ControlBox = true,
-                    Resizable = false,
+                    Resizable = true,
                     Theme = MetroFramework.MetroThemeStyle.Light,
                     Style = MetroFramework.MetroColorStyle.Blue
                 };
@@ -892,5 +904,229 @@ namespace UI
                 MessageBox.Show("Nu aveti permisiunea de a vizualiza pacienti.");
             }
         }
+        private void BtnVizualizarePacientiSearch_Click(object sender, EventArgs e)
+        {
+            Pacient[] pacienti = adminPacienti.GetPacienti(out int nrPacienti);
+
+            if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.StergerePacienti))
+            {
+                MetroForm formVizualizare = new MetroForm
+                {
+                    Text = "Toti Pacientii",
+                    Size = new Size(1450, 600),
+                    StartPosition = FormStartPosition.CenterScreen,
+                    MaximizeBox = false,
+                    MinimizeBox = true,
+                    ControlBox = true,
+                    Resizable = false,
+                    Theme = MetroFramework.MetroThemeStyle.Light,
+                    Style = MetroFramework.MetroColorStyle.Black
+                };
+
+                MetroPanel searchPanel = new MetroPanel
+                {
+                    Dock = DockStyle.Top,
+                    Height = 100,
+                    Padding = new Padding(10)
+                };
+
+                MetroButton btnCautarePacient = new MetroButton
+                {
+                    Text = "Cauta Pacient",
+                    Size = new Size(120, 30),
+                    Location = new Point(1250, 35),
+                    Theme = MetroFramework.MetroThemeStyle.Light
+                };
+
+                MetroTextBox txtCautare = new MetroTextBox
+                {
+                    Width = 250,
+                    Location = new Point(820, 35),
+                    PromptText = "Introduceti textul pentru cautare"
+                };
+
+                MetroLabel lblCautare = new MetroLabel
+                {
+                    Text = "Cauta dupa:",
+                    Location = new Point(10, 10),
+                    AutoSize = true,
+                    FontWeight = MetroFramework.MetroLabelWeight.Bold
+                };
+
+                MetroRadioButton rbNume = new MetroRadioButton
+                {
+                    Text = "Nume",
+                    Location = new Point(20, 35),
+                    Checked = true
+                };
+
+                MetroRadioButton rbPrenume = new MetroRadioButton
+                {
+                    Text = "Prenume",
+                    Location = new Point(160, 35)
+                };
+
+                MetroRadioButton rbCNP = new MetroRadioButton
+                {
+                    Text = "CNP",
+                    Location = new Point(320, 35)
+                };
+
+                MetroRadioButton rbTelefon = new MetroRadioButton
+                {
+                    Text = "Telefon",
+                    Location = new Point(480, 35)
+                };
+
+                MetroRadioButton rbEmail = new MetroRadioButton
+                {
+                    Text = "Email",
+                    Location = new Point(640, 35)
+                };
+
+                MetroCheckBox chkCautareExacta = new MetroCheckBox
+                {
+                    Text = "Potrivire exacta",
+                    Location = new Point(20, 65)
+                };
+
+
+
+                searchPanel.Controls.AddRange(new Control[] {
+            lblCautare, rbNume, rbPrenume, rbCNP, rbTelefon, rbEmail,
+            txtCautare, btnCautarePacient, chkCautareExacta
+        });
+
+                ListView listView = new ListView
+                {
+                    Dock = DockStyle.Fill,
+                    View = View.Details,
+                    FullRowSelect = true,
+                    GridLines = true,
+                    Font = new Font("Segoe UI", 10)
+                };
+
+                listView.Columns.Add("ID", 50);
+                listView.Columns.Add("Nume", 100);
+                listView.Columns.Add("Prenume", 100);
+                listView.Columns.Add("CNP", 120);
+                listView.Columns.Add("Adresa", 150);
+                listView.Columns.Add("Telefon", 100);
+                listView.Columns.Add("Email", 120);
+                listView.Columns.Add("Data Nasterii", 100);
+                listView.Columns.Add("Gen", 50);
+
+                MetroPanel mainPanel = new MetroPanel
+                {
+                    Dock = DockStyle.Fill,
+                    AutoScroll = true
+                };
+
+                PopulateListView(listView, pacienti);
+                mainPanel.Controls.Add(listView);
+
+                formVizualizare.Controls.Add(mainPanel);
+                formVizualizare.Controls.Add(searchPanel);
+
+                btnCautarePacient.Click += (s, args) =>
+                {
+                    string searchText = txtCautare.Text.Trim();
+                    bool exactMatch = chkCautareExacta.Checked;
+
+                    string searchCriteria = "";
+                    if (rbNume.Checked) searchCriteria = "Nume";
+                    else if (rbPrenume.Checked) searchCriteria = "Prenume";
+                    else if (rbCNP.Checked) searchCriteria = "CNP";
+                    else if (rbTelefon.Checked) searchCriteria = "Telefon";
+                    else if (rbEmail.Checked) searchCriteria = "Email";
+
+                    Pacient[] filteredPacienti = SearchPacienti(pacienti, searchCriteria, searchText, exactMatch);
+
+                    PopulateListView(listView, filteredPacienti);
+                };
+
+                formVizualizare.ShowDialog();
+            }
+            else
+            {
+                MessageBox.Show("Nu aveti permisiunea de a vizualiza pacienti.");
+            }
+        }
+
+        private void PopulateListView(ListView listView, Pacient[] pacienti)
+        {
+            listView.Items.Clear();
+
+            if (pacienti == null || pacienti.Length == 0)
+            {
+                MessageBox.Show("Nu au fost gasiti pacienti care sa corespunda criteriilor de cautare.",
+                    "Cautare", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            foreach (var pacient in pacienti)
+            {
+                ListViewItem item = new ListViewItem(pacient.IdPacient.ToString());
+                item.SubItems.Add(pacient.Nume);
+                item.SubItems.Add(pacient.Prenume);
+                item.SubItems.Add(pacient.CNP);
+                item.SubItems.Add(pacient.Adresa);
+                item.SubItems.Add(pacient.Telefon);
+                item.SubItems.Add(pacient.Email);
+                item.SubItems.Add(pacient.DataNasterii.ToShortDateString());
+                item.SubItems.Add(pacient.Gen);
+
+                listView.Items.Add(item);
+            }
+        }
+
+        private Pacient[] SearchPacienti(Pacient[] allPacienti, string searchCriteria, string searchText, bool exactMatch)
+        {
+            if (string.IsNullOrWhiteSpace(searchText))
+                return allPacienti;
+
+            List<Pacient> results = new List<Pacient>();
+            StringComparison comparison = exactMatch ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+
+            foreach (var pacient in allPacienti)
+            {
+                bool isMatch = false;
+
+                switch (searchCriteria)
+                {
+                    case "Nume":
+                        isMatch = exactMatch
+                            ? pacient.Nume.Equals(searchText, comparison)
+                            : pacient.Nume.Contains(searchText, comparison);
+                        break;
+                    case "Prenume":
+                        isMatch = exactMatch
+                            ? pacient.Prenume.Equals(searchText, comparison)
+                            : pacient.Prenume.Contains(searchText, comparison);
+                        break;
+                    case "CNP":
+                        isMatch = exactMatch
+                            ? pacient.CNP.Equals(searchText, comparison)
+                            : pacient.CNP.Contains(searchText, comparison);
+                        break;
+                    case "Telefon":
+                        isMatch = exactMatch
+                            ? pacient.Telefon.Equals(searchText, comparison)
+                            : pacient.Telefon.Contains(searchText, comparison);
+                        break;
+                    case "Email":
+                        isMatch = exactMatch
+                            ? pacient.Email.Equals(searchText, comparison)
+                            : pacient.Email.Contains(searchText, comparison);
+                        break;
+                }
+
+                if (isMatch)
+                    results.Add(pacient);
+            }
+
+            return results.ToArray();
+        }
+
     }
 }

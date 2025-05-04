@@ -9,6 +9,7 @@ using MetroFramework.Forms;
 using MetroFramework.Controls;
 using MetroFramework;
 using GestionareSpital;
+using System.Collections.Generic;
 
 namespace UI
 {
@@ -113,6 +114,7 @@ namespace UI
         private MetroButton btnVizualizarePrescriptiiPacient;
         private MetroButton btnVizualizarePrescriptiiMedic;
         private MetroButton btnVizualizarePrescriptiiData;
+        private MetroButton btnCautarePrescriptii;
         private MetroButton btnInchide;
 
         public FormGestionarePrescriptii(
@@ -164,6 +166,8 @@ namespace UI
             btnVizualizarePrescriptiiPacient = new MetroButton { Text = "Prescriptii pacient", Size = new Size(250, 40) };
             btnVizualizarePrescriptiiMedic = new MetroButton { Text = "Prescriptii emise de medic", Size = new Size(250, 40) };
             btnVizualizarePrescriptiiData = new MetroButton { Text = "Prescriptii dupa data", Size = new Size(250, 40) };
+            btnCautarePrescriptii = new MetroButton { Text = "Cautare prescriptii", Size = new Size(250, 40) };
+
             btnInchide = new MetroButton { Text = "Inchide", Size = new Size(250, 40) };
         }
 
@@ -174,6 +178,8 @@ namespace UI
             btnVizualizarePrescriptiiPacient.Location = new Point(75, 180);
             btnVizualizarePrescriptiiMedic.Location = new Point(75, 230);
             btnVizualizarePrescriptiiData.Location = new Point(75, 280);
+            btnCautarePrescriptii.Location = new Point(75, 330);
+
             btnInchide.Location = new Point(75, 330);
         }
 
@@ -184,6 +190,8 @@ namespace UI
             btnVizualizarePrescriptiiPacient.Click += BtnVizualizarePrescriptiiPacient_Click;
             btnVizualizarePrescriptiiMedic.Click += BtnVizualizarePrescriptiiMedic_Click;
             btnVizualizarePrescriptiiData.Click += BtnVizualizarePrescriptiiData_Click;
+            btnCautarePrescriptii.Click += BtnCautarePrescriptii_Click;
+
             btnInchide.Click += (s, e) => this.Close();
         }
 
@@ -194,6 +202,8 @@ namespace UI
             panelMeniu.Controls.Add(btnVizualizarePrescriptiiPacient);
             panelMeniu.Controls.Add(btnVizualizarePrescriptiiMedic);
             panelMeniu.Controls.Add(btnVizualizarePrescriptiiData);
+            panelMeniu.Controls.Add(btnCautarePrescriptii);
+
             panelMeniu.Controls.Add(btnInchide);
         }
 
@@ -1060,5 +1070,414 @@ namespace UI
 
             }
         }
+
+        private void BtnCautarePrescriptii_Click(object sender, EventArgs e)
+        {
+            if (VerificarePermisiuni.ArePermisiune(utilizatorCurent, Permisiuni.VizualizarePrescriptii))
+            {
+                using (MetroForm formCautare = new MetroForm())
+                {
+                    formCautare.Text = "Cautare Prescriptii";
+                    formCautare.Size = new Size(600, 500);
+                    formCautare.StartPosition = FormStartPosition.CenterScreen;
+                    formCautare.Theme = MetroThemeStyle.Light;
+                    formCautare.Style = MetroColorStyle.Black;
+
+                    MetroPanel panelOptiuni = new MetroPanel
+                    {
+                        Dock = DockStyle.Top,
+                        Height = 200,
+                        AutoScroll = true,
+                        Padding = new Padding(10)
+                    };
+
+                    MetroLabel lblTitlu = new MetroLabel
+                    {
+                        Text = "Selectati criteriul de cautare:",
+                        FontWeight = MetroLabelWeight.Bold,
+                        Location = new Point(10, 10),
+                        Size = new Size(400, 30)
+                    };
+                    panelOptiuni.Controls.Add(lblTitlu);
+
+                    GroupBox groupTipCautare = new GroupBox
+                    {
+                        Text = "Tip de cautare",
+                        Location = new Point(10, 40),
+                        Size = new Size(250, 80)
+                    };
+
+                    RadioButton radioExact = new RadioButton
+                    {
+                        Text = "Potrivire exacta",
+                        Location = new Point(10, 20),
+                        Checked = true
+                    };
+                    RadioButton radioPartial = new RadioButton
+                    {
+                        Text = "Potrivire partiala",
+                        Location = new Point(10, 45)
+                    };
+
+                    groupTipCautare.Controls.Add(radioExact);
+                    groupTipCautare.Controls.Add(radioPartial);
+                    panelOptiuni.Controls.Add(groupTipCautare);
+
+                    GroupBox groupCampuri = new GroupBox
+                    {
+                        Text = "Criteriu de cautare",
+                        Location = new Point(270, 40),
+                        Size = new Size(300, 150)
+                    };
+
+                    RadioButton radioIdPrescriptie = new RadioButton { Text = "ID Prescriptie", Location = new Point(10, 20), Checked = true };
+                    RadioButton radioPacient = new RadioButton { Text = "Pacient", Location = new Point(10, 45) };
+                    RadioButton radioMedic = new RadioButton { Text = "Medic", Location = new Point(10, 70) };
+                    RadioButton radioMedicamente = new RadioButton { Text = "Medicamente", Location = new Point(150, 20) };
+                    RadioButton radioDiagnostic = new RadioButton { Text = "Diagnostic", Location = new Point(150, 45) };
+                    RadioButton radioData = new RadioButton { Text = "Data emiterii", Location = new Point(150, 70) };
+                    RadioButton radioIndicatii = new RadioButton { Text = "Indicatii", Location = new Point(10, 95) };
+                    RadioButton radioDescriere = new RadioButton { Text = "Descriere", Location = new Point(150, 95) };
+
+                    groupCampuri.Controls.Add(radioIdPrescriptie);
+                    groupCampuri.Controls.Add(radioPacient);
+                    groupCampuri.Controls.Add(radioMedic);
+                    groupCampuri.Controls.Add(radioMedicamente);
+                    groupCampuri.Controls.Add(radioDiagnostic);
+                    groupCampuri.Controls.Add(radioData);
+                    groupCampuri.Controls.Add(radioIndicatii);
+                    groupCampuri.Controls.Add(radioDescriere);
+                    panelOptiuni.Controls.Add(groupCampuri);
+
+                    MetroLabel lblTermenCautare = new MetroLabel
+                    {
+                        Text = "Termen de cautare:",
+                        Location = new Point(10, 270),
+                        Size = new Size(150, 30)
+                    };
+                    formCautare.Controls.Add(lblTermenCautare);
+
+                    MetroTextBox txtTermenCautare = new MetroTextBox
+                    {
+                        Location = new Point(160, 270),
+                        Size = new Size(250, 30),
+                    };
+                    formCautare.Controls.Add(txtTermenCautare);
+
+                    MetroLabel lblData = new MetroLabel
+                    {
+                        Text = "Data emiterii:",
+                        Location = new Point(10, 245),
+                        Size = new Size(120, 30),
+                        Visible = false
+                    };
+                    formCautare.Controls.Add(lblData);
+
+                    DateTimePicker dtpData = new DateTimePicker
+                    {
+                        Format = DateTimePickerFormat.Short,
+                        Location = new Point(130, 245),
+                        Size = new Size(250, 30),
+                        Visible = false
+                    };
+                    formCautare.Controls.Add(dtpData);
+
+                    radioData.CheckedChanged += (s, ev) =>
+                    {
+                        lblData.Visible = radioData.Checked;
+                        dtpData.Visible = radioData.Checked;
+                        txtTermenCautare.Visible = !radioData.Checked;
+                        lblTermenCautare.Visible = !radioData.Checked;
+                    };
+
+                    MetroLabel lblRezultate = new MetroLabel
+                    {
+                        Text = "Rezultatele cautarii:",
+                        Location = new Point(10, 280),
+                        Size = new Size(150, 30)
+                    };
+                    formCautare.Controls.Add(lblRezultate);
+
+                    ListView listViewRezultate = new ListView
+                    {
+                        Location = new Point(10, 310),
+                        Size = new Size(570, 130),
+                        View = View.Details,
+                        FullRowSelect = true,
+                        GridLines = true
+                    };
+
+                    listViewRezultate.Columns.Add("ID", 50);
+                    listViewRezultate.Columns.Add("Pacient", 120);
+                    listViewRezultate.Columns.Add("Medic", 120);
+                    listViewRezultate.Columns.Add("Diagnostic", 100);
+                    listViewRezultate.Columns.Add("Data", 80);
+                    listViewRezultate.Columns.Add("Medicamente", 100);
+                    formCautare.Controls.Add(listViewRezultate);
+
+                    MetroButton btnCauta = new MetroButton
+                    {
+                        Text = "Cauta",
+                        Location = new Point(390, 270),
+                        Size = new Size(100, 30)
+                    };
+                    formCautare.Controls.Add(btnCauta);
+
+                    btnCauta.Click += (s, ev) =>
+                    {
+                        if (!radioData.Checked && string.IsNullOrWhiteSpace(txtTermenCautare.Text))
+                        {
+                            MessageBox.Show("Introduceti un termen de cautare!", "Atentie",
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return;
+                        }
+
+                        CautaPrescriptii(
+                            listViewRezultate,
+                            txtTermenCautare.Text,
+                            dtpData.Value,
+                            radioPartial.Checked,
+                            radioIdPrescriptie.Checked,
+                            radioPacient.Checked,
+                            radioMedic.Checked,
+                            radioMedicamente.Checked,
+                            radioDiagnostic.Checked,
+                            radioData.Checked,
+                            radioIndicatii.Checked,
+                            radioDescriere.Checked
+                        );
+                    };
+
+                    listViewRezultate.DoubleClick += (s, ev) =>
+                    {
+                        if (listViewRezultate.SelectedItems.Count > 0)
+                        {
+                            int idPrescriptie = int.Parse(listViewRezultate.SelectedItems[0].Text);
+                            AfiseazaDetaliiPrescriptie(idPrescriptie);
+                        }
+                    };
+
+                    formCautare.Controls.Add(panelOptiuni);
+                    formCautare.ShowDialog();
+                }
+            }
+            else
+            {
+                MessageBox.Show("Nu aveti permisiunea de a cauta prescriptii.",
+                    "Acces restrictionat", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        private void CautaPrescriptii(
+            ListView listViewRezultate,
+            string termenCautare,
+            DateTime dataCautare,
+            bool cautarePartiala,
+            bool cautaDupaId,
+            bool cautaDupaPacient,
+            bool cautaDupaMedic,
+            bool cautaDupaMedicamente,
+            bool cautaDupaDiagnostic,
+            bool cautaDupaData,
+            bool cautaDupaIndicatii,
+            bool cautaDupaDescriere)
+        {
+            listViewRezultate.Items.Clear();
+            Prescriptie[] toatePrescriptiile = adminPrescriptii.GetPrescriptii(out int nrPrescriptii);
+            List<Prescriptie> rezultate = new List<Prescriptie>();
+
+            string termLower = termenCautare.ToLower();
+
+            foreach (var prescriptie in toatePrescriptiile)
+            {
+                bool potrivire = false;
+
+                if (cautaDupaId)
+                {
+                    if (prescriptie.IdPrescriptie.ToString().Contains(termenCautare))
+                    {
+                        potrivire = true;
+                    }
+                }
+                else if (cautaDupaPacient)
+                {
+                    Pacient pacient = adminPacienti.GetPacientDupaId(prescriptie.IdPacient);
+                    string numePacient = $"{pacient.Nume} {pacient.Prenume}".ToLower();
+
+                    if (cautarePartiala && numePacient.Contains(termLower) ||
+                        !cautarePartiala && numePacient.Equals(termLower))
+                    {
+                        potrivire = true;
+                    }
+                }
+                else if (cautaDupaMedic)
+                {
+                    Medic medic = adminMedici.GetMedicDupaId(prescriptie.IdMedic);
+                    string numeMedic = $"{medic.Nume} {medic.Prenume}".ToLower();
+
+                    if (cautarePartiala && numeMedic.Contains(termLower) ||
+                        !cautarePartiala && numeMedic.Equals(termLower))
+                    {
+                        potrivire = true;
+                    }
+                }
+                else if (cautaDupaMedicamente)
+                {
+                    string medicamenteString = string.Join(" ", prescriptie.Medicamente).ToLower();
+
+                    if (cautarePartiala && medicamenteString.Contains(termLower) ||
+                        !cautarePartiala && medicamenteString.Equals(termLower))
+                    {
+                        potrivire = true;
+                    }
+                }
+                else if (cautaDupaDiagnostic)
+                {
+                    string diagnosticLower = prescriptie.Diagnostic.ToLower();
+
+                    if (cautarePartiala && diagnosticLower.Contains(termLower) ||
+                        !cautarePartiala && diagnosticLower.Equals(termLower))
+                    {
+                        potrivire = true;
+                    }
+                }
+                else if (cautaDupaData)
+                {
+                    if (prescriptie.DataEmitere.Date == dataCautare.Date)
+                    {
+                        potrivire = true;
+                    }
+                }
+                else if (cautaDupaIndicatii && !string.IsNullOrEmpty(prescriptie.Indicatii))
+                {
+                    string indicatiiLower = prescriptie.Indicatii.ToLower();
+
+                    if (cautarePartiala && indicatiiLower.Contains(termLower) ||
+                        !cautarePartiala && indicatiiLower.Equals(termLower))
+                    {
+                        potrivire = true;
+                    }
+                }
+                else if (cautaDupaDescriere && !string.IsNullOrEmpty(prescriptie.Descriere))
+                {
+                    string descriereLower = prescriptie.Descriere.ToLower();
+
+                    if (cautarePartiala && descriereLower.Contains(termLower) ||
+                        !cautarePartiala && descriereLower.Equals(termLower))
+                    {
+                        potrivire = true;
+                    }
+                }
+
+                if (potrivire)
+                {
+                    rezultate.Add(prescriptie);
+                }
+            }
+
+            foreach (var prescriptie in rezultate)
+            {
+                Pacient pacient = adminPacienti.GetPacientDupaId(prescriptie.IdPacient);
+                Medic medic = adminMedici.GetMedicDupaId(prescriptie.IdMedic);
+
+                ListViewItem item = new ListViewItem(prescriptie.IdPrescriptie.ToString());
+                item.SubItems.Add($"{pacient.Nume} {pacient.Prenume}");
+                item.SubItems.Add($"Dr. {medic.Nume} {medic.Prenume}");
+                item.SubItems.Add(prescriptie.Diagnostic);
+                item.SubItems.Add(prescriptie.DataEmitere.ToShortDateString());
+                item.SubItems.Add(string.Join(", ", prescriptie.Medicamente));
+
+                listViewRezultate.Items.Add(item);
+            }
+
+            if (rezultate.Count == 0)
+            {
+                MessageBox.Show("Nu s-au gasit prescriptii care sa corespunda criteriului selectat.",
+                    "Rezultat cautare", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        private void AfiseazaDetaliiPrescriptie(int idPrescriptie)
+        {
+            Prescriptie prescriptie = GetPrescriptieDupaId(idPrescriptie);
+            if (prescriptie == null)
+            {
+                MessageBox.Show("Nu s-a gasit prescriptia selectata!", "Eroare",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            Pacient pacient = adminPacienti.GetPacientDupaId(prescriptie.IdPacient);
+            Medic medic = adminMedici.GetMedicDupaId(prescriptie.IdMedic);
+
+            using (MetroForm formDetalii = new MetroForm())
+            {
+                formDetalii.Text = $"Detalii Prescriptie #{prescriptie.IdPrescriptie}";
+                formDetalii.Size = new Size(500, 500);
+                formDetalii.StartPosition = FormStartPosition.CenterScreen;
+                formDetalii.Theme = MetroThemeStyle.Light;
+                formDetalii.Style = MetroColorStyle.Black;
+                formDetalii.Padding = new Padding(20);
+
+                TableLayoutPanel tableLayout = new TableLayoutPanel
+                {
+                    Dock = DockStyle.Fill,
+                    ColumnCount = 2,
+                    RowCount = 8,
+                    CellBorderStyle = TableLayoutPanelCellBorderStyle.Single
+                };
+
+                tableLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
+                tableLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70F));
+
+                AddRowToTable(tableLayout, 0, "ID Prescriptie:", prescriptie.IdPrescriptie.ToString());
+                AddRowToTable(tableLayout, 1, "Pacient:", $"{pacient.Nume} {pacient.Prenume}");
+                AddRowToTable(tableLayout, 2, "Medic:", $"Dr. {medic.Nume} {medic.Prenume}");
+                AddRowToTable(tableLayout, 3, "Data emiterii:", prescriptie.DataEmitere.ToShortDateString());
+                AddRowToTable(tableLayout, 4, "Diagnostic:", prescriptie.Diagnostic);
+                AddRowToTable(tableLayout, 5, "Medicamente:", string.Join(Environment.NewLine, prescriptie.Medicamente));
+                AddRowToTable(tableLayout, 6, "Indicatii:", prescriptie.Indicatii ?? "N/A");
+                AddRowToTable(tableLayout, 7, "Descriere:", prescriptie.Descriere ?? "N/A");
+
+                formDetalii.Controls.Add(tableLayout);
+                formDetalii.ShowDialog();
+            }
+        }
+
+        private void AddRowToTable(TableLayoutPanel table, int rowIndex, string label, string value)
+        {
+            Label lblLabel = new Label
+            {
+                Text = label,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Padding = new Padding(5)
+            };
+
+            Label lblValue = new Label
+            {
+                Text = value,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(5),
+                AutoSize = false
+            };
+
+            table.Controls.Add(lblLabel, 0, rowIndex);
+            table.Controls.Add(lblValue, 1, rowIndex);
+        }
+
+        private Prescriptie GetPrescriptieDupaId(int idPrescriptie)
+        {
+            Prescriptie[] prescriptii = adminPrescriptii.GetPrescriptii(out int nrPrescriptii);
+            foreach (var prescriptie in prescriptii)
+            {
+                if (prescriptie.IdPrescriptie == idPrescriptie)
+                    return prescriptie;
+            }
+            return null;
+        }
+
     }
 }
